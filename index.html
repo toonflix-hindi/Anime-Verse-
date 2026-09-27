@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnimeVerse — Watch Anime Free</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --bg:#0b0b0f; --card:#15151c; --accent:#e50914; --gold:#ffc107;
+  --text:#fff; --muted:#9a9aa5; }
+body { background:var(--bg); color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif; padding-bottom:80px; }
+
+.navbar { position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; align-items:center; gap:26px;
+  padding:16px 32px; background:linear-gradient(to bottom,
+    rgba(0,0,0,.9), transparent); transition:background .3s; }
+.navbar.scrolled { background:rgba(11,11,15,.97); backdrop-filter:blur(10px); }
+.logo { font-size:22px; font-weight:800; }
+.logo span { color:var(--accent); }
+.nav-links { display:flex; gap:22px; list-style:none; }
+.nav-links a { color:#c8c8d0; text-decoration:none; font-size:14px; }
+.nav-links a.active { color:#fff; }
+.nav-right { margin-left:auto; display:flex; gap:14px; align-items:center; }
+.icon-btn { background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
+.admin-btn { padding:7px 14px; border-radius:6px; background:var(--accent);
+  color:#fff; font-size:12px; font-weight:700; text-decoration:none; }
+
+.hero { position:relative; height:70vh; min-height:460px;
+  display:flex; align-items:flex-end; padding:0 32px 60px; }
+.hero::before { content:''; position:absolute; inset:0;
+  background:url('https://picsum.photos/seed/animebanner/1600/900')
+    center/cover no-repeat; }
+.hero::after { content:''; position:absolute; inset:0;
+  background:linear-gradient(to top, #0b0b0f 2%,
+    rgba(11,11,15,.7) 45%, rgba(11,11,15,.2) 100%),
+    linear-gradient(to right, rgba(11,11,15,.95), transparent 70%); }
+.hero-content { position:relative; z-index:2; max-width:560px; }
+.badge-top { display:inline-block; background:var(--accent);
+  font-size:11px; font-weight:700; letter-spacing:1.5px;
+  padding:4px 10px; border-radius:3px; margin-bottom:14px; }
+.hero h1 { font-size:clamp(30px,4.5vw,52px); line-height:1.05;
+  font-weight:800; letter-spacing:-1.2px; margin-bottom:12px; }
+.hero-meta { display:flex; flex-wrap:wrap; gap:12px;
+  color:var(--muted); font-size:13px; margin-bottom:14px; align-items:center; }
+.hero-meta .star { color:var(--gold); }
+.chip { background:rgba(255,255,255,.12); padding:3px 10px;
+  border-radius:20px; font-size:12px; }
+.hero p { color:#cfcfd6; font-size:14px; line-height:1.6; margin-bottom:22px; }
+.hero-btns { display:flex; gap:12px; flex-wrap:wrap; }
+.btn { display:inline-flex; align-items:center; gap:8px;
+  padding:11px 26px; border-radius:6px; font-size:14px; font-weight:600;
+  border:none; cursor:pointer; transition:transform .2s; }
+.btn:hover { transform:scale(1.05); }
+.btn-play { background:#fff; color:#000; }
+.btn-info { background:rgba(255,255,255,.18); color:#fff; }
+
+.row { padding:0 32px; margin-bottom:44px; }
+.row-head { display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px; }
+.row-head h2 { font-size:18px; font-weight:700; }
+.row-scroll { display:flex; gap:12px; overflow-x:auto;
+  scroll-behavior:smooth; padding-bottom:12px; scrollbar-width:none; }
+.row-scroll::-webkit-scrollbar { display:none; }
+
+.top10-item { display:flex; align-items:center; flex:0 0 auto;
+  margin-right:4px; cursor:pointer; }
+.top10-number { font-size:120px; font-weight:900; line-height:1;
+  letter-spacing:-12px; color:transparent;
+  -webkit-text-stroke:3px #5a5a68; margin-right:-22px;
+  user-select:none; transition:-webkit-text-stroke .3s; z-index:1; }
+.top10-item:hover .top10-number { -webkit-text-stroke:3px var(--accent); }
+.top10-item .card { flex:0 0 150px; z-index:2; }
+.top10-item .card .poster-img { height:225px; }
+
+.card { flex:0 0 175px; border-radius:9px; overflow:hidden;
+  position:relative; cursor:pointer; background:var(--card);
+  transition:transform .3s, box-shadow .3s; }
+.card:hover { transform:scale(1.07);
+  box-shadow:0 14px 34px rgba(0,0,0,.8); z-index:5; }
+.poster-img { width:100%; height:260px; object-fit:cover; display:block; }
+
+.card-badges-top { position:absolute; top:8px; left:8px; right:8px;
+  display:flex; justify-content:space-between; gap:6px; pointer-events:none; }
+.rating-badge { display:inline-flex; align-items:center; gap:3px;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(4px); color:#fff;
+  font-size:11px; font-weight:700; padding:3px 7px; border-radius:4px; }
+.rating-badge .star { color:var(--gold); }
+.lang-badge { font-size:10px; font-weight:700; padding:3px 7px;
+  border-radius:4px; color:#fff; }
+.lang-badge.jp { background:rgba(229,9,20,.9); }
+.lang-badge.hi { background:rgba(255,145,0,.9); }
+.lang-badge.en { background:rgba(33,150,243,.9); }
+.lang-badge.sub { background:rgba(120,80,220,.9); }
+
+.new-badge { position:absolute; bottom:8px; left:8px;
+  background:linear-gradient(135deg,#00c853,#00e676); color:#002d0d;
+  font-size:10px; font-weight:800; padding:3px 8px; border-radius:4px;
+  animation:pulse 1.8s infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow:0 3px 10px rgba(0,200,83,.5); }
+  50%     { box-shadow:0 3px 18px rgba(0,200,83,.9); }
+}
+
+.card-info { position:absolute; bottom:0; left:0; right:0;
+  padding:34px 12px 12px;
+  background:linear-gradient(to top, rgba(0,0,0,.96), transparent);
+  opacity:0; transition:opacity .3s; }
+.card:hover .card-info { opacity:1; }
+.card-info h3 { font-size:13px; margin-bottom:3px; }
+.card-info small { font-size:11px; color:var(--muted); }
+
+.loading-box { display:grid; place-items:center;
+  min-height:60vh; color:var(--muted); }
+.spinner { width:34px; height:34px;
+  border:3px solid rgba(255,255,255,.15); border-top-color:var(--accent);
+  border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.bottom-nav { position:fixed; bottom:0; left:0; right:0;
+  background:rgba(11,11,15,.98); backdrop-filter:blur(10px);
+  border-top:1px solid #1e1e28; display:flex;
+  justify-content:space-around; padding:10px 0 12px; z-index:200; }
+.bn-item { display:flex; flex-direction:column; align-items:center;
+  gap:3px; color:var(--muted); font-size:10px; font-weight:700;
+  text-decoration:none; cursor:pointer; }
+.bn-item.active { color:var(--accent); }
+.bn-item .bn-icon { font-size:20px; }
+
+@media (max-width:768px) {
+  .navbar { padding:12px 18px; gap:16px; }
+  .nav-links { display:none; }
+  .hero { padding:0 18px 50px; height:62vh; }
+  .row { padding:0 18px; margin-bottom:34px; }
+  .card { flex:0 0 135px; }
+  .poster-img { height:200px; }
+  .top10-number { font-size:88px; -webkit-text-stroke:2px #5a5a68;
+    margin-right:-16px; }
+  .top10-item .card { flex:0 0 120px; }
+  .top10-item .card .poster-img { height:180px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="logo">ANIME<span>VERSE</span></div>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="#">Anime</a></li>
+    <li><a href="#">Movies</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="icon-btn">🔍</button>
+    <a href="admin.html" class="admin-btn">Admin</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <span class="badge-top">WELCOME</span>
+    <h1>Watch Anime Online</h1>
+    <div class="hero-meta">
+      <span>HD Quality</span>
+      <span class="chip">Multi Audio</span>
+      <span class="chip">No Ads</span>
+    </div>
+    <p>Apni favourite anime dekho — Hindi, Japanese, English audio me. Subtitle support ke saath.</p>
+  </div>
+</section>
+
+<div id="rows-container">
+  <div class="loading-box"><div class="spinner"></div></div>
+</div>
+
+<nav class="bottom-nav">
+  <a class="bn-item active" href="index.html">
+    <span class="bn-icon">🏠</span>HOME</a>
+  <a class="bn-item" onclick="document.querySelector('.row')?.scrollIntoView({behavior:'smooth'})">
+    <span class="bn-icon">▶️</span>WATCH</a>
+  <a class="bn-item" onclick="location.reload()">
+    <span class="bn-icon">🔄</span>REFRESH</a>
+  <a class="bn-item" href="admin.html">
+    <span class="bn-icon">⚙️</span>ADMIN</a>
+</nav>
+
+<script src="data.js"></script>
+<script>
+function buildCard(a) {
+  return `
+    <div class="card" onclick="location.href='anime.html?id=${a.id}'">
+      <div class="card-badges-top">
+        <span class="rating-badge"><span class="star">★</span>${a.rating}</span>
+        <span class="lang-badge ${a.lang}">${langLabels[a.lang] || 'JP'}</span>
+      </div>
+      <img class="poster-img" src="${imgUrl(a.poster, 300, 450)}"
+           alt="${a.title}" loading="lazy">
+      ${a.isNew ? '<span class="new-badge">NEW</span>' : ''}
+      <div class="card-info">
+        <h3>${a.title}</h3>
+        <small>${a.year} · ${a.status}</small>
+      </div>
+    </div>
+  `;
+}
+
+function buildRow(title, list) {
+  if (!list.length) return '';
+  return `
+    <section class="row">
+      <div class="row-head"><h2>${title}</h2></div>
+      <div class="row-scroll">${list.map(buildCard).join('')}</div>
+    </section>
+  `;
+}
+
+function buildTop10Row() {
+  const top10 = animeDB.filter(a => a.rank)
+    .sort((x, y) => x.rank - y.rank).slice(0, 10);
+  if (!top10.length) return '';
+  return `
+    <section class="row">
+      <div class="row-head"><h2>🔥 Top 10 This Week</h2></div>
+      <div class="row-scroll">
+        ${top10.map(a => `
+          <div class="top10-item" onclick="location.href='anime.html?id=${a.id}'">
+            <div class="top10-number">${a.rank}</div>
+            <div class="card">
+              <div class="card-badges-top">
+                <span class="rating-badge"><span class="star">★</span>${a.rating}</span>
+                <span class="lang-badge ${a.lang}">${langLabels[a.lang] || 'JP'}</span>
+              </div>
+              <img class="poster-img" src="${imgUrl(a.poster, 300, 450)}"
+                   alt="${a.title}" loading="lazy">
+              ${a.isNew ? '<span class="new-badge">NEW</span>' : ''}
+              <div class="card-info">
+                <h3>${a.title}</h3>
+                <small>${a.year} · ${a.status}</small>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderAll() {
+  const box = document.getElementById('rows-container');
+  if (!animeDB.length) {
+    box.innerHTML = '<div class="loading-box"><div>Abhi koi anime nahi. Admin panel se add karo.</div></div>';
+    return;
+  }
+
+  let html = buildTop10Row();
+
+  const allGenres = [...new Set(animeDB.flatMap(a => a.genres || []))];
+  allGenres.forEach(g => {
+    const list = animeDB.filter(a => a.genres?.includes(g));
+    if (list.length >= 2) html += buildRow(`${g} Anime`, list);
+  });
+
+  html += buildRow('📈 Trending Now', animeDB.filter(a => a.rating >= 8.5));
+  html += buildRow('🆕 Newly Released', animeDB.filter(a => a.isNew));
+
+  box.innerHTML = html;
+}
+
+window.onDataUpdate = renderAll;
+onDBReady(renderAll);
+
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 60);
+});
+</script>
+</body>
+</html>
