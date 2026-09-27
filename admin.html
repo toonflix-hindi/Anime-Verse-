@@ -13,7 +13,6 @@
 body { background:var(--bg); color:var(--text);
   font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
 
-/* ============ LOGIN ============ */
 #login { display:grid; place-items:center; min-height:100vh; padding:20px; }
 .login-box { background:var(--card); padding:36px; border-radius:14px;
   border:1px solid var(--border); width:100%; max-width:400px;
@@ -23,6 +22,14 @@ body { background:var(--bg); color:var(--text);
 .login-box .logo span { color:var(--accent); }
 .login-box h2 { font-size:15px; text-align:center; color:var(--muted);
   margin-bottom:26px; font-weight:400; }
+
+.pass-row { position:relative; margin-bottom:10px; }
+.pass-row input { margin-bottom:0; padding-right:44px; }
+.eye-btn { position:absolute; right:8px; top:50%;
+  transform:translateY(-50%); background:none; border:none;
+  color:var(--muted); font-size:16px; cursor:pointer; padding:6px;
+  border-radius:6px; }
+.eye-btn:hover { color:#fff; background:#1a1a22; }
 
 input, select, textarea {
   width:100%; padding:11px 14px; border-radius:8px;
@@ -50,7 +57,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .btn-sm { padding:7px 12px; font-size:12px; }
 .btn-full { width:100%; }
 
-/* ============ DASHBOARD ============ */
 #dash { display:none; }
 #dash.on { display:block; }
 
@@ -102,7 +108,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media (max-width:640px) { .grid-2 { grid-template-columns:1fr; } }
 
-/* ============ SEARCH ============ */
 .search-row { display:flex; gap:8px; margin-bottom:20px; }
 .search-row input { margin:0; flex:1; }
 .search-row button { padding:11px 22px; flex-shrink:0; }
@@ -129,7 +134,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .result-card button.added { background:#1a1a22; color:var(--muted);
   cursor:not-allowed; }
 
-/* ============ LIBRARY ============ */
 .lib-grid { display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
 .lib-card { background:#0b0b0f; border-radius:10px; overflow:hidden;
@@ -150,7 +154,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .lib-card .actions button.del:hover { background:var(--accent);
   border-color:var(--accent); color:#fff; }
 
-/* ============ EPISODES ============ */
 .ep-list { display:flex; flex-direction:column; gap:8px; }
 .ep-item { background:#0b0b0f; border:1px solid var(--border);
   border-radius:10px; padding:12px; display:flex; gap:12px;
@@ -170,7 +173,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .ep-item .ep-actions button.del:hover { background:var(--accent);
   border-color:var(--accent); color:#fff; }
 
-/* ============ ANALYTICS ============ */
 .top-list { display:flex; flex-direction:column; gap:12px; }
 .top-row { display:grid; grid-template-columns:26px 1fr auto;
   gap:12px; align-items:center; }
@@ -191,7 +193,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .act-item .icon { font-size:16px; }
 .act-item .time { margin-left:auto; color:var(--muted); font-size:11px; }
 
-/* ============ MODAL ============ */
 .modal { position:fixed; inset:0; background:rgba(0,0,0,.8);
   backdrop-filter:blur(6px); display:none; z-index:500;
   align-items:center; justify-content:center; padding:20px; }
@@ -205,7 +206,6 @@ input[type=checkbox] { width:auto; margin:0; }
 .modal-actions { display:flex; gap:10px; margin-top:18px; }
 .modal-actions .btn { flex:1; }
 
-/* ============ TOAST ============ */
 .toast { position:fixed; bottom:24px; left:50%;
   transform:translateX(-50%) translateY(120px);
   background:var(--green); color:#002d0d;
@@ -227,23 +227,25 @@ input[type=checkbox] { width:auto; margin:0; }
 </head>
 <body>
 
-<!-- ============== LOGIN SCREEN ============== -->
+<!-- LOGIN -->
 <div id="login">
   <div class="login-box">
     <div class="logo">ANIME<span>VERSE</span></div>
     <h2>🔒 Admin Panel</h2>
     <label>Password</label>
-    <input type="password" id="passIn" placeholder="Password daalo"
-           onkeypress="if(event.key==='Enter') doLogin()">
+    <div class="pass-row">
+      <input type="password" id="passIn" placeholder="Password daalo"
+             onkeypress="if(event.key==='Enter') doLogin()">
+      <button class="eye-btn" type="button" onclick="toggleEye()">👁</button>
+    </div>
     <button class="btn btn-primary btn-full" onclick="doLogin()"
             style="margin-top:10px;">🔐 Login</button>
     <p id="loginError" style="color:var(--accent);font-size:12px;
-       text-align:center;margin-top:12px;display:none;">
-       ❌ Galat password!</p>
+       text-align:center;margin-top:12px;display:none;"></p>
   </div>
 </div>
 
-<!-- ============== DASHBOARD ============== -->
+<!-- DASHBOARD -->
 <div id="dash">
   <div class="topbar">
     <div class="logo">ANIME<span>VERSE</span></div>
@@ -255,27 +257,13 @@ input[type=checkbox] { width:auto; margin:0; }
 
   <div class="container">
 
-    <!-- STATS -->
     <div class="stats">
-      <div class="stat-card">
-        <div class="num" id="statAnime">0</div>
-        <div class="lbl">Anime</div>
-      </div>
-      <div class="stat-card green">
-        <div class="num" id="statEps">0</div>
-        <div class="lbl">Episodes</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="num" id="statViews">0</div>
-        <div class="lbl">Views</div>
-      </div>
-      <div class="stat-card gold">
-        <div class="num" id="statHours">0</div>
-        <div class="lbl">Watch Hours</div>
-      </div>
+      <div class="stat-card"><div class="num" id="statAnime">0</div><div class="lbl">Anime</div></div>
+      <div class="stat-card green"><div class="num" id="statEps">0</div><div class="lbl">Episodes</div></div>
+      <div class="stat-card blue"><div class="num" id="statViews">0</div><div class="lbl">Views</div></div>
+      <div class="stat-card gold"><div class="num" id="statHours">0</div><div class="lbl">Watch Hours</div></div>
     </div>
 
-    <!-- TABS -->
     <div class="tabs">
       <div class="tab on" data-tab="tSearch">🔍 AniList</div>
       <div class="tab" data-tab="tLibrary">📚 Library</div>
@@ -283,7 +271,6 @@ input[type=checkbox] { width:auto; margin:0; }
       <div class="tab" data-tab="tManual">✏️ Manual Add</div>
     </div>
 
-    <!-- ============ TAB: AniList Search ============ -->
     <div class="panel on" id="tSearch">
       <div class="panel-box">
         <h2>🔍 AniList Se Search Karo</h2>
@@ -304,18 +291,15 @@ input[type=checkbox] { width:auto; margin:0; }
       </div>
     </div>
 
-    <!-- ============ TAB: Library ============ -->
     <div class="panel" id="tLibrary">
       <div class="panel-box">
         <h2>📚 Meri Library (<span id="libCount">0</span>)</h2>
-        <input type="text" id="libSearch"
-               placeholder="🔍 Library me search karo..."
+        <input type="text" id="libSearch" placeholder="🔍 Library me search karo..."
                oninput="renderLibrary()">
         <div class="lib-grid" id="libGrid" style="margin-top:14px;"></div>
       </div>
     </div>
 
-    <!-- ============ TAB: Analytics ============ -->
     <div class="panel" id="tAnalytics">
       <div class="panel-box">
         <h2>📈 Top 10 Most Watched</h2>
@@ -331,7 +315,6 @@ input[type=checkbox] { width:auto; margin:0; }
       </div>
     </div>
 
-    <!-- ============ TAB: Manual Add ============ -->
     <div class="panel" id="tManual">
       <div class="panel-box">
         <h2>✏️ <span id="editorTitle">Manual Anime Editor</span></h2>
@@ -405,7 +388,7 @@ input[type=checkbox] { width:auto; margin:0; }
   </div>
 </div>
 
-<!-- ============== EPISODES MODAL ============== -->
+<!-- EPISODES MODAL -->
 <div class="modal" id="epModal">
   <div class="modal-box">
     <h3>🎬 <span id="epModalTitle">Episodes</span></h3>
@@ -423,7 +406,7 @@ input[type=checkbox] { width:auto; margin:0; }
   </div>
 </div>
 
-<!-- ============== EPISODE FORM MODAL ============== -->
+<!-- EPISODE FORM MODAL -->
 <div class="modal" id="epFormModal">
   <div class="modal-box">
     <h3 id="epFormTitle">➕ Add Episode</h3>
@@ -451,66 +434,68 @@ input[type=checkbox] { width:auto; margin:0; }
       <button class="btn btn-green" onclick="saveEpisode()" style="flex:2;">
         💾 Save Episode
       </button>
-      <button class="btn btn-ghost" onclick="closeModal('epFormModal')">
-        Cancel
-      </button>
+      <button class="btn btn-ghost" onclick="closeModal('epFormModal')">Cancel</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast">Saved!</div>
 
+<!-- ============================================================
+     ⚠️ IMPORTANT: data.js pehle load hoti hai (firebase config
+     already usme hai). Admin script me dobara config NAHI likhna!
+     ============================================================ -->
 <script src="data.js"></script>
 <script>
 /* ============================================================
-   🔥 FIREBASE CONFIG
-   ============================================================ */
-const firebaseConfig = {
-  apiKey: "AIzaSyBHCaQPCzEJ0QTPZaXgx0xuk4f6eb_OuRU",
-  authDomain: "anistreamx-903a3.firebaseapp.com",
-  databaseURL: "https://anistreamx-903a3-default-rtdb.firebaseio.com",
-  projectId: "anistreamx-903a3",
-  storageBucket: "anistreamx-903a3.firebasestorage.app",
-  messagingSenderId: "670816164518",
-  appId: "1:670816164518:web:6a3222731f6b22696d3267",
-  measurementId: "G-DW23SVGE6W"
-};
-
-/* ============================================================
    🔐 SIMPLE PASSWORD LOGIN
-   YAHAN apna password set karo 👇
+   👇 YAHAN APNA PASSWORD SET KARO
    ============================================================ */
-const ADMIN_PASSWORD = "toonflixhindi";
+const ADMIN_PASSWORD = "anistreamx123";
 
-/* ============================================================
-   LOGIN / LOGOUT
-   ============================================================ */
+/* Eye toggle (password dikhane ke liye) */
+function toggleEye() {
+  const inp = document.getElementById('passIn');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+/* Login */
 function doLogin() {
-  const pass  = document.getElementById('passIn').value;
+  const inp = document.getElementById('passIn');
   const errEl = document.getElementById('loginError');
+  const pass = (inp.value || '').trim();   /* trim important — space hataata hai */
+
+  console.log('Password typed:', JSON.stringify(pass));
+  console.log('Password expected:', JSON.stringify(ADMIN_PASSWORD));
+  console.log('Match:', pass === ADMIN_PASSWORD);
 
   if (pass === ADMIN_PASSWORD) {
     sessionStorage.setItem('adminAuth', 'true');
     errEl.style.display = 'none';
     showDashboard();
-    toast('✅ Login successful!');
   } else {
     errEl.style.display = 'block';
-    errEl.textContent = '❌ Galat password!';
-    document.getElementById('passIn').value = '';
+    errEl.textContent = '❌ Galat password! (typed: "' + pass + '")';
+    inp.value = '';
+    inp.focus();
   }
 }
 
+/* Logout */
 function doLogout() {
   if (!confirm('Logout karein?')) return;
   sessionStorage.removeItem('adminAuth');
   location.reload();
 }
 
+/* Dashboard dikhao */
 function showDashboard() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('dash').classList.add('on');
-  initAdmin();
+  /* initAdmin only if it exists */
+  if (typeof initAdmin === 'function') {
+    try { initAdmin(); } catch (e) { console.error('initAdmin error:', e); }
+  }
 }
 
 /* Auto-login check */
@@ -531,6 +516,11 @@ let currentEpAnimeId = null;
 let editingEpNum = null;
 
 function initAdmin() {
+  /* Wait until Firebase DB ready (from data.js) */
+  if (typeof onDBReady !== 'function') {
+    console.error('onDBReady not found — data.js failed to load');
+    return;
+  }
   onDBReady(() => {
     updateStats();
     renderLibrary();
@@ -544,7 +534,7 @@ function initAdmin() {
     }
   });
 
-  /* Tab switching */
+  /* Tabs */
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
@@ -554,15 +544,17 @@ function initAdmin() {
     });
   });
 
-  /* Live analytics */
-  statsRef.on('value', () => {
-    updateStats();
-    renderAnalytics();
-  });
+  /* Live analytics (agar statsRef available hai) */
+  if (typeof statsRef !== 'undefined') {
+    statsRef.on('value', () => {
+      updateStats();
+      renderAnalytics();
+    });
+  }
 }
 
 /* ============================================================
-   📊 STATS UPDATE
+   📊 STATS
    ============================================================ */
 function updateStats() {
   document.getElementById('statAnime').textContent = animeDB.length;
@@ -577,7 +569,7 @@ function updateStats() {
       (d.totalViews || 0).toLocaleString();
     const hours = Math.floor((d.totalWatchTime || 0) / 3600);
     document.getElementById('statHours').textContent = hours;
-  });
+  }).catch(() => {});
 }
 
 /* ============================================================
@@ -789,7 +781,7 @@ async function deleteAnime(id) {
 }
 
 /* ============================================================
-   🎬 EPISODES MANAGER
+   🎬 EPISODES
    ============================================================ */
 function openEpisodes(animeId) {
   currentEpAnimeId = animeId;
@@ -940,7 +932,6 @@ function renderAnalytics() {
   statsRef.once('value').then(snap => {
     const d = snap.val() || {};
 
-    /* Top 10 */
     const perAnime = d.perAnime || {};
     const arr = Object.keys(perAnime).map(k => ({
       id: Number(k.replace('anime_', '')),
@@ -968,7 +959,6 @@ function renderAnalytics() {
       }).join('');
     }
 
-    /* Recent Activity */
     const acts = d.recentActivity || {};
     const actArr = Object.values(acts)
       .sort((a, b) => b.timestamp - a.timestamp).slice(0, 15);
@@ -993,7 +983,6 @@ function renderAnalytics() {
       }).join('');
     }
 
-    /* Daily chart */
     const daily = d.dailyViews || {};
     const days = Object.keys(daily).sort().slice(-7);
     const chart = document.getElementById('dailyChart');
@@ -1019,7 +1008,7 @@ function renderAnalytics() {
         `;
       }).join('');
     }
-  });
+  }).catch(() => {});
 }
 
 /* ============================================================
