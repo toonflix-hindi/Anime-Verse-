@@ -3,271 +3,262 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel - Anime Verse</title>
+<title>Watch - Anime Verse</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.0/dist/hls.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-  body { background: #0f0f1a; color: #fff; }
+  body { background: #08080f; color: #fff; min-height: 100vh; }
 
-  /* LOGIN */
-  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0f0f1a, #1a1a2e); position: fixed; inset: 0; z-index: 9999; }
-  .login-box { background: #1a1a2e; padding: 45px 35px; border-radius: 16px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(233,69,96,0.2); border: 1px solid #2a2a4a; }
-  .login-box .icon { text-align: center; font-size: 48px; margin-bottom: 10px; }
-  .login-box h2 { text-align: center; color: #e94560; font-size: 24px; margin-bottom: 8px; }
-  .login-box .sub { text-align: center; color: #888; font-size: 13px; margin-bottom: 30px; }
-  .login-box input { width: 100%; padding: 14px; margin-bottom: 14px; border-radius: 10px; border: 1px solid #333; background: #0f0f1a; color: #fff; font-size: 15px; outline: none; }
-  .login-box input:focus { border-color: #e94560; }
-  .pwd-wrap { position: relative; }
-  .pwd-wrap #togglePwd { position: absolute; right: 14px; top: 14px; cursor: pointer; font-size: 18px; user-select: none; }
-  #loginBtn { width: 100%; padding: 14px; background: linear-gradient(135deg, #e94560, #c73650); color: #fff; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
-  #loginBtn:disabled { opacity: 0.6; }
-  #loginError { color: #ff5555; text-align: center; margin-top: 16px; font-size: 14px; min-height: 20px; }
-
-  /* PANEL */
-  #adminPanel { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1a1a2e; border-radius: 12px; margin-bottom: 25px; border: 1px solid #2a2a4a; }
-  .topbar h1 { color: #e94560; font-size: 22px; }
-  #logoutBtn { padding: 10px 20px; background: #e94560; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-  .tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
-  .tab-btn { padding: 12px 22px; background: #1a1a2e; color: #aaa; border: 1px solid #2a2a4a; border-radius: 8px; cursor: pointer; font-weight: 600; }
-  .tab-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  .card { background: #1a1a2e; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #2a2a4a; }
-  .card h3 { color: #e94560; margin-bottom: 18px; font-size: 18px; }
-  .form-group { margin-bottom: 15px; }
-  .form-group label { display: block; margin-bottom: 6px; color: #aaa; font-size: 13px; }
-  .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; background: #0f0f1a; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
-  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #e94560; }
-  .form-group textarea { min-height: 80px; resize: vertical; }
-  .btn { padding: 12px 24px; background: #e94560; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
-  .btn:hover { opacity: 0.9; }
-  .btn-blue { background: #3b82f6; }
-  .btn-red { background: #ef4444; }
-  .btn-green { background: #10b981; }
-  .btn-gray { background: #4b5563; }
-
-  .anime-item { display: flex; gap: 15px; padding: 15px; background: #0f0f1a; border-radius: 10px; margin-bottom: 12px; align-items: center; border: 1px solid #2a2a4a; }
-  .anime-item img { width: 55px; height: 75px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-  .anime-info { flex: 1; min-width: 0; }
-  .anime-info h4 { color: #fff; margin-bottom: 4px; font-size: 15px; }
-  .anime-info p { color: #888; font-size: 12px; }
-  .anime-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .anime-actions button { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: #fff; }
-
-  .search-result { display: flex; gap: 12px; padding: 12px; background: #0f0f1a; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid #2a2a4a; }
-  .search-result:hover { border-color: #e94560; }
-  .search-result img { width: 50px; height: 65px; object-fit: cover; border-radius: 5px; }
-  .search-result-info h4 { font-size: 14px; margin-bottom: 4px; }
-  .search-result-info p { font-size: 12px; color: #888; }
-
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-  .stat-card { background: linear-gradient(135deg, #1a1a2e, #252545); padding: 20px; border-radius: 12px; border: 1px solid #2a2a4a; text-align: center; }
-  .stat-card .num { font-size: 28px; color: #e94560; font-weight: bold; }
-  .stat-card .label { color: #aaa; font-size: 13px; margin-top: 5px; }
-
-  .toast { position: fixed; bottom: 30px; right: 30px; padding: 15px 25px; background: #10b981; color: #fff; border-radius: 10px; font-weight: 600; z-index: 9999; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.error { background: #ef4444; }
-
-  .empty { text-align: center; padding: 40px; color: #666; font-size: 14px; }
-
-  /* Episode add info box */
-  .info-box {
-    background: rgba(59,130,246,0.1);
-    border: 1px solid rgba(59,130,246,0.4);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    line-height: 1.7;
-    color: #93c5fd;
+  .topbar {
+    padding: 15px 20px;
+    background: rgba(8,8,15,0.95);
+    border-bottom: 1px solid rgba(233,69,96,0.2);
+    display: flex; align-items: center; gap: 15px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(20px);
   }
-  .info-box strong { color: #60a5fa; }
-  .info-box code {
-    background: rgba(0,0,0,0.4);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #fbbf24;
-    word-break: break-all;
-  }
-
-  .link-type-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 8px;
-  }
-  .link-type-mp4 { background: #10b981; color: #fff; }
-  .link-type-embed { background: #f59e0b; color: #fff; }
-
-  .episode-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    background: #0f0f1a;
+  .back-btn {
+    padding: 8px 16px;
+    background: #1a1a2e;
     border: 1px solid #2a2a4a;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    border-radius: 20px;
+    color: #fff; cursor: pointer; font-size: 14px;
+    transition: all 0.2s;
   }
-  .episode-item-info { flex: 1; min-width: 0; }
-  .episode-item-info strong { color: #e94560; }
-  .episode-item-info p { font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+  .back-btn:hover { border-color: #e94560; }
+  .topbar-logo {
+    font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg, #e94560, #ff6b9d);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .player-page { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+  .player-wrap {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 25px;
+    aspect-ratio: 16/9;
+    border: 1px solid rgba(233,69,96,0.2);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  #videoPlayer {
+    width: 100%; height: 100%; display: block;
+    background: #000;
+  }
+  #iframePlayer {
+    width: 100%; height: 100%; display: none;
+    border: none; background: #000;
+  }
+
+  .player-error {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.95);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 15px; padding: 30px;
+    text-align: center;
+  }
+  .player-error.show { display: flex; }
+  .player-error h3 { color: #e94560; font-size: 20px; }
+  .player-error p { color: #aaa; font-size: 14px; max-width: 400px; }
+  .player-error button {
+    padding: 12px 25px; background: #e94560;
+    color: #fff; border: none; border-radius: 25px;
+    cursor: pointer; font-weight: bold; font-size: 14px;
+  }
+  .player-error button:hover { opacity: 0.9; }
+
+  .now-playing {
+    background: linear-gradient(135deg, #1a1a2e, #252545);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(233,69,96,0.3);
+    display: flex; align-items: center; gap: 15px;
+    flex-wrap: wrap;
+  }
+  .now-playing .label {
+    background: #e94560;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 11px; font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .now-playing .ep-title { font-size: 16px; font-weight: 600; flex: 1; min-width: 200px; }
+  .now-playing .ep-type {
+    font-size: 11px; padding: 4px 10px; border-radius: 10px;
+    background: rgba(16,185,129,0.2); color: #10b981; font-weight: bold;
+  }
+
+  .anime-header {
+    display: flex; gap: 22px;
+    margin-bottom: 35px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: rgba(26,26,46,0.4);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .anime-header-poster {
+    width: 170px; height: 250px;
+    object-fit: cover; border-radius: 12px;
+    flex-shrink: 0;
+    border: 2px solid rgba(233,69,96,0.4);
+  }
+  .anime-header-info { flex: 1; min-width: 250px; }
+  .anime-header-info h1 {
+    font-size: 30px; margin-bottom: 12px; font-weight: 800;
+    background: linear-gradient(135deg, #fff, #ffb0c4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .anime-header-meta {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
+  }
+  .anime-header-meta span {
+    background: #1a1a2e; padding: 6px 14px;
+    border-radius: 20px; font-size: 12px;
+    border: 1px solid rgba(233,69,96,0.3);
+    color: #ffb0c4; font-weight: 600;
+  }
+  .anime-header-info p {
+    color: #aaa; line-height: 1.7; font-size: 14px;
+  }
+
+  .episodes-section h2 {
+    font-size: 22px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .episodes-section h2::before {
+    content: ''; width: 4px; height: 22px;
+    background: #e94560; border-radius: 2px;
+    box-shadow: 0 0 10px rgba(233,69,96,0.6);
+  }
+  .episodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 40px;
+  }
+  .episode-btn {
+    padding: 15px 12px;
+    background: #14141f;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    color: #fff; cursor: pointer;
+    text-align: center; font-size: 14px;
+    font-weight: 600; transition: all 0.25s;
+    position: relative;
+  }
+  .episode-btn:hover {
+    border-color: #e94560;
+    background: rgba(233,69,96,0.1);
+    transform: translateY(-3px);
+  }
+  .episode-btn.active {
+    background: linear-gradient(135deg, #e94560, #c73650);
+    border-color: #e94560;
+    box-shadow: 0 8px 25px rgba(233,69,96,0.4);
+  }
+  .episode-btn .ep-num {
+    display: block; font-size: 18px;
+    font-weight: 800; margin-bottom: 4px;
+  }
+  .episode-btn .ep-title-small {
+    display: block; font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .episode-btn.active .ep-title-small { color: rgba(255,255,255,0.9); }
+
+  .loading-full {
+    text-align: center; padding: 120px 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid #1a1a2e;
+    border-top-color: #e94560;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-ep {
+    text-align: center; padding: 40px;
+    color: #666; font-size: 14px;
+    background: rgba(26,26,46,0.4);
+    border-radius: 12px;
+    border: 1px dashed rgba(233,69,96,0.3);
+  }
+
+  @media (max-width: 768px) {
+    .player-page { padding: 15px; }
+    .anime-header { padding: 15px; gap: 15px; }
+    .anime-header-poster { width: 110px; height: 165px; }
+    .anime-header-info h1 { font-size: 20px; }
+    .episodes-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .episode-btn { padding: 12px 8px; font-size: 12px; }
+    .episode-btn .ep-num { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ========== LOGIN SCREEN ========== -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="icon">🔐</div>
-    <h2>Admin Login</h2>
-    <p class="sub">Anime Verse Control Panel</p>
-    <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
-    <div class="pwd-wrap">
-      <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
-      <span id="togglePwd">👁️</span>
-    </div>
-    <button id="loginBtn">LOGIN</button>
-    <p id="loginError"></p>
-  </div>
+<div class="topbar">
+  <button class="back-btn" onclick="location.href='index.html'">← Back</button>
+  <div class="topbar-logo">🎬 Anime Verse</div>
 </div>
 
-<!-- ========== ADMIN PANEL ========== -->
-<div id="adminPanel">
-  <div class="topbar">
-    <h1>🎛️ Anime Verse Admin</h1>
-    <button id="logoutBtn">Logout</button>
+<div class="player-page">
+  <div id="loadingView" class="loading-full">
+    <div class="spinner"></div>
+    <p>Loading...</p>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="addTab">➕ Add Anime</button>
-    <button class="tab-btn" data-tab="episodeTab">📺 Add Episode</button>
-    <button class="tab-btn" data-tab="searchTab">🔍 AniList Search</button>
-    <button class="tab-btn" data-tab="listTab">📚 Library</button>
-    <button class="tab-btn" data-tab="statsTab">📊 Analytics</button>
-  </div>
+  <div id="contentView" style="display:none;">
 
-  <!-- ===== TAB 1: ADD ANIME ===== -->
-  <div id="addTab" class="tab-content active">
-    <div class="card">
-      <h3>Add New Anime (Manual)</h3>
-      <div class="form-group"><label>Anime Title *</label><input id="addTitle" type="text" placeholder="e.g. Naruto"></div>
-      <div class="form-group"><label>Poster Image URL *</label><input id="addPoster" type="text" placeholder="https://..."></div>
-      <div class="form-group"><label>Description</label><textarea id="addDesc" placeholder="Short description..."></textarea></div>
-      <div class="form-group"><label>Genre</label><input id="addGenre" type="text" placeholder="e.g. Action, Adventure"></div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="addStatus">
-          <option value="Ongoing">Ongoing</option>
-          <option value="Completed">Completed</option>
-          <option value="Upcoming">Upcoming</option>
-        </select>
+    <div class="player-wrap">
+      <video id="videoPlayer" controls playsinline preload="metadata"></video>
+      <iframe id="iframePlayer" allowfullscreen allow="autoplay; encrypted-media; fullscreen"></iframe>
+
+      <div class="player-error" id="playerError">
+        <h3>⚠️ Video Play Nahi Ho Raha</h3>
+        <p id="errorMsg">Agar primary link kaam nahi kar raha, backup try karo ya new tab mein open karo.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+          <button onclick="tryBackupSource()" id="backupBtn" style="display:none;">🔄 Try Backup</button>
+          <button onclick="openInNewTab()" style="background:#3b82f6;">🔗 Open in New Tab</button>
+        </div>
       </div>
-      <div class="form-group"><label>Total Episodes</label><input id="addEpisodes" type="number" value="12"></div>
-      <div class="form-group"><label>Rating (0-10)</label><input id="addRating" type="number" step="0.1" value="8.0"></div>
-      <button class="btn" id="saveAnimeBtn">💾 Save Anime</button>
-    </div>
-  </div>
-
-  <!-- ===== TAB 2: ADD EPISODE (NEW) ===== -->
-  <div id="episodeTab" class="tab-content">
-    <div class="card">
-      <h3>📺 Add Episode to Anime</h3>
-
-      <div class="info-box">
-        <strong>💡 Dono tarah ke links support hain:</strong><br>
-        <strong>1. Direct MP4/M3U8:</strong> <code>https://...file.mp4</code> या <code>.m3u8</code><br>
-        <strong>2. Redirect/Embed Link:</strong> <code>https://canon-filetolink-go.vercel.app/watch/...</code><br>
-        System apne aap detect kar lega! 🎯
-      </div>
-
-      <div class="form-group">
-        <label>Select Anime *</label>
-        <select id="epAnimeSelect">
-          <option value="">-- Choose Anime --</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Episode Number *</label>
-        <input id="epNumber" type="number" placeholder="e.g. 1" value="1">
-      </div>
-
-      <div class="form-group">
-        <label>Episode Title (optional)</label>
-        <input id="epTitle" type="text" placeholder="e.g. The Beginning">
-      </div>
-
-      <div class="form-group">
-        <label>Video URL * (MP4 / M3U8 / Redirect)</label>
-        <input id="epVideoUrl" type="text" placeholder="https://...mp4 ya https://.../watch/xxx">
-        <div id="linkTypeBadge" style="margin-top:6px;"></div>
-      </div>
-
-      <div class="form-group">
-        <label>Backup Video URL (optional)</label>
-        <input id="epBackupUrl" type="text" placeholder="Agar primary fail ho to yeh chalega">
-      </div>
-
-      <div class="form-group">
-        <label>Duration (minutes)</label>
-        <input id="epDuration" type="number" placeholder="e.g. 24" value="24">
-      </div>
-
-      <button class="btn btn-green" id="saveEpisodeBtn">💾 Save Episode</button>
-      <button class="btn btn-gray" id="clearEpFormBtn" style="margin-left:8px;">🔄 Clear</button>
     </div>
 
-    <!-- Existing Episodes of selected anime -->
-    <div class="card" id="existingEpsCard" style="display:none;">
-      <h3>📋 Existing Episodes</h3>
-      <div id="existingEpsList"></div>
+    <div class="now-playing" id="nowPlaying" style="display:none;">
+      <span class="label">NOW PLAYING</span>
+      <span class="ep-title" id="nowPlayingTitle">Episode 1</span>
+      <span class="ep-type" id="nowPlayingType">MP4</span>
     </div>
-  </div>
 
-  <!-- ===== TAB 3: ANILIST SEARCH ===== -->
-  <div id="searchTab" class="tab-content">
-    <div class="card">
-      <h3>Search Anime from AniList</h3>
-      <div class="form-group"><input id="anilistQuery" type="text" placeholder="Type anime name..."></div>
-      <button class="btn btn-blue" id="searchAnilistBtn">🔍 Search</button>
-      <div id="anilistResults" style="margin-top: 20px;"></div>
+    <div class="anime-header">
+      <img class="anime-header-poster" id="animePoster" src="" alt=""
+           onerror="this.src='https://via.placeholder.com/170x250/1a1a2e/e94560?text=No+Image'">
+      <div class="anime-header-info">
+        <h1 id="animeTitle"></h1>
+        <div class="anime-header-meta" id="animeMeta"></div>
+        <p id="animeDesc"></p>
+      </div>
     </div>
-  </div>
 
-  <!-- ===== TAB 4: LIBRARY ===== -->
-  <div id="listTab" class="tab-content">
-    <div class="card">
-      <h3>Manage Library</h3>
-      <div class="form-group"><input id="librarySearch" type="text" placeholder="🔍 Search in library..."></div>
-      <div id="animeList"></div>
+    <div class="episodes-section">
+      <h2>📺 Episodes</h2>
+      <div class="episodes-grid" id="episodesGrid"></div>
     </div>
-  </div>
 
-  <!-- ===== TAB 5: ANALYTICS ===== -->
-  <div id="statsTab" class="tab-content">
-    <div class="stats-grid">
-      <div class="stat-card"><div class="num" id="statTotalAnime">0</div><div class="label">Total Anime</div></div>
-      <div class="stat-card"><div class="num" id="statTotalViews">0</div><div class="label">Total Views</div></div>
-      <div class="stat-card"><div class="num" id="statOngoing">0</div><div class="label">Ongoing</div></div>
-      <div class="stat-card"><div class="num" id="statCompleted">0</div><div class="label">Completed</div></div>
-    </div>
-    <div class="card">
-      <h3>Top 10 Most Viewed</h3>
-      <div id="topViewedList"></div>
-    </div>
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script>
 /* ============================================ */
@@ -285,447 +276,251 @@ const firebaseConfig = {
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const db = firebase.database();
 
 /* ============================================ */
-/* ELEMENTS */
+/* URL PARAMS */
 /* ============================================ */
-const loginScreen = document.getElementById('loginScreen');
-const adminPanel  = document.getElementById('adminPanel');
-const loginBtn    = document.getElementById('loginBtn');
-const loginError  = document.getElementById('loginError');
-const emailInput  = document.getElementById('loginEmail');
-const pwdInput    = document.getElementById('loginPassword');
-const togglePwd   = document.getElementById('togglePwd');
-const toastEl     = document.getElementById('toast');
+const urlParams = new URLSearchParams(window.location.search);
+const animeId = urlParams.get('id');
+
+const video = document.getElementById('videoPlayer');
+const iframe = document.getElementById('iframePlayer');
+const errorBox = document.getElementById('playerError');
+const errorMsg = document.getElementById('errorMsg');
+const backupBtn = document.getElementById('backupBtn');
+
+let currentAnime = null;
+let currentEpisode = null;
+let currentBackupUrl = null;
+let currentVideoUrl = null;
+let hlsInstance = null;
 
 /* ============================================ */
-/* PASSWORD TOGGLE */
+/* START */
 /* ============================================ */
-togglePwd.addEventListener('click', () => {
-  pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
-  togglePwd.textContent = pwdInput.type === 'password' ? '👁️' : '🙈';
-});
-
-/* ============================================ */
-/* TOAST */
-/* ============================================ */
-function showToast(msg, isError = false) {
-  toastEl.textContent = msg;
-  toastEl.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(() => { toastEl.className = 'toast'; }, 3000);
+if (!animeId) {
+  document.getElementById('loadingView').innerHTML = `
+    <h2 style="color:#e94560;">❌ Anime ID नहीं मिली</h2>
+    <p style="color:#666;margin-top:10px;">Home page से कोई anime select करो</p>
+    <button onclick="location.href='index.html'" style="margin-top:20px;padding:12px 25px;background:#e94560;color:#fff;border:none;border-radius:25px;cursor:pointer;font-weight:bold;">← Home</button>
+  `;
+} else {
+  loadAnime(animeId);
 }
 
 /* ============================================ */
-/* AUTH */
+/* LOAD ANIME */
 /* ============================================ */
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    loginScreen.style.display = 'none';
-    adminPanel.style.display = 'block';
-    loadAnimeList();
-    loadStats();
-    populateAnimeDropdown();
-  } else {
-    loginScreen.style.display = 'flex';
-    adminPanel.style.display = 'none';
-  }
-});
-
-loginBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const password = pwdInput.value;
-  if (!email || !password) { loginError.textContent = '⚠️ Email aur Password dono bharo'; return; }
-
-  loginBtn.textContent = 'Logging in...';
-  loginBtn.disabled = true;
-  loginError.textContent = '';
-
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-  } catch (err) {
-    loginBtn.textContent = 'LOGIN';
-    loginBtn.disabled = false;
-    const errors = {
-      'auth/wrong-password': '❌ Galat Password',
-      'auth/user-not-found': '❌ Yeh Email registered nahi hai',
-      'auth/invalid-email': '❌ Email galat format mein hai',
-      'auth/too-many-requests': '⏳ Bahut baar try kiya, 5 min baad',
-      'auth/invalid-credential': '❌ Galat Email ya Password'
-    };
-    loginError.textContent = errors[err.code] || '❌ ' + err.message;
-  }
-});
-
-pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') loginBtn.click(); });
-emailInput.addEventListener('keypress', e => { if (e.key === 'Enter') pwdInput.focus(); });
-
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  if (confirm('Logout karna chahte ho?')) auth.signOut().then(() => location.reload());
-});
-
-/* ============================================ */
-/* TABS */
-/* ============================================ */
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
+function loadAnime(id) {
+  db.ref('animeverse/anime/' + id).once('value').then(snap => {
+    const anime = snap.val();
+    if (!anime) {
+      document.getElementById('loadingView').innerHTML = `
+        <h2 style="color:#e94560;">❌ Anime नहीं मिला</h2>
+        <button onclick="location.href='index.html'" style="margin-top:20px;padding:12px 25px;background:#e94560;color:#fff;border:none;border-radius:25px;cursor:pointer;font-weight:bold;">← Home</button>
+      `;
+      return;
+    }
+    currentAnime = { id, ...anime };
+    renderAnimePage(currentAnime);
+  }).catch(err => {
+    document.getElementById('loadingView').innerHTML = 
+      `<h2 style="color:#e94560;">❌ Error: ${err.message}</h2>`;
   });
-});
+}
 
 /* ============================================ */
-/* ADD MANUAL ANIME */
+/* RENDER PAGE */
 /* ============================================ */
-document.getElementById('saveAnimeBtn').addEventListener('click', async () => {
-  const title = document.getElementById('addTitle').value.trim();
-  const poster = document.getElementById('addPoster').value.trim();
-  if (!title || !poster) { showToast('Title aur Poster zaroori hai', true); return; }
+function renderAnimePage(anime) {
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('contentView').style.display = 'block';
 
-  const animeData = {
-    title,
-    poster,
-    description: document.getElementById('addDesc').value.trim(),
-    genre: document.getElementById('addGenre').value.trim(),
-    status: document.getElementById('addStatus').value,
-    episodes: parseInt(document.getElementById('addEpisodes').value) || 12,
-    rating: parseFloat(document.getElementById('addRating').value) || 8.0,
-    views: 0,
-    createdAt: Date.now()
-  };
+  document.getElementById('animePoster').src = anime.poster || '';
+  document.getElementById('animeTitle').textContent = anime.title || 'Untitled';
+  document.getElementById('animeDesc').textContent = anime.description || 'No description.';
 
-  try {
-    await db.ref('animeverse/anime').push(animeData);
-    showToast('✅ Anime add ho gaya!');
-    ['addTitle','addPoster','addDesc','addGenre'].forEach(id => document.getElementById(id).value = '');
-  } catch (err) {
-    showToast('❌ ' + err.message, true);
+  document.getElementById('animeMeta').innerHTML = `
+    <span>📺 ${anime.episodes || '?'} Episodes</span>
+    <span>⭐ ${anime.rating || '?'}/10</span>
+    <span>${anime.status || 'Unknown'}</span>
+    ${anime.genre ? `<span>${anime.genre}</span>` : ''}
+  `;
+
+  renderEpisodes(anime);
+
+  // Auto-play first episode
+  const episodes = getSortedEpisodes(anime);
+  if (episodes.length) {
+    setTimeout(() => playEpisode(episodes[0][1]), 300);
+  } else {
+    document.getElementById('episodesGrid').innerHTML = 
+      '<div class="empty-ep" style="grid-column:1/-1;">📭 Abhi koi episode add nahi hua</div>';
   }
-});
+}
 
 /* ============================================ */
-/* LINK TYPE DETECTION */
+/* EPISODES */
+/* ============================================ */
+function getSortedEpisodes(anime) {
+  const list = anime.episodeList || {};
+  return Object.entries(list)
+    .filter(([k, v]) => v && typeof v === 'object' && v.videoUrl)
+    .sort((a, b) => (a[1].number || 0) - (b[1].number || 0));
+}
+
+function renderEpisodes(anime) {
+  const grid = document.getElementById('episodesGrid');
+  const episodes = getSortedEpisodes(anime);
+
+  if (!episodes.length) {
+    grid.innerHTML = '<div class="empty-ep" style="grid-column:1/-1;">📭 Abhi koi episode add nahi hua. Admin panel se add karo.</div>';
+    return;
+  }
+
+  grid.innerHTML = episodes.map(([key, ep]) => `
+    <button class="episode-btn" data-ep-key="${key}" data-ep-num="${ep.number}">
+      <span class="ep-num">EP ${ep.number}</span>
+      <span class="ep-title-small">${ep.title || 'Episode ' + ep.number}</span>
+    </button>
+  `).join('');
+
+  // Attach click listeners
+  grid.querySelectorAll('.episode-btn').forEach((btn, idx) => {
+    btn.addEventListener('click', () => playEpisode(episodes[idx][1]));
+  });
+}
+
+/* ============================================ */
+/* PLAY EPISODE */
+/* ============================================ */
+function playEpisode(ep) {
+  currentEpisode = ep;
+  currentBackupUrl = ep.backupUrl || null;
+  currentVideoUrl = ep.videoUrl;
+
+  // Highlight active button
+  document.querySelectorAll('.episode-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (String(btn.dataset.epNum) === String(ep.number)) btn.classList.add('active');
+  });
+
+  // Show now playing
+  document.getElementById('nowPlaying').style.display = 'flex';
+  document.getElementById('nowPlayingTitle').textContent = ep.title || `Episode ${ep.number}`;
+  document.getElementById('nowPlayingType').textContent = (ep.videoType || 'unknown').toUpperCase();
+
+  // Reset player
+  errorBox.classList.remove('show');
+  backupBtn.style.display = currentBackupUrl ? 'inline-block' : 'none';
+
+  // Detect type & play
+  const type = ep.videoType || detectLinkType(ep.videoUrl);
+
+  if (type === 'mp4' || type === 'hls') {
+    playVideoSource(ep.videoUrl, type);
+  } else {
+    playEmbed(ep.videoUrl);
+  }
+
+  // Scroll to player
+  document.querySelector('.player-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ============================================ */
+/* PLAY VIDEO (MP4 / HLS) */
+/* ============================================ */
+function playVideoSource(url, type) {
+  iframe.style.display = 'none';
+  iframe.src = '';
+  video.style.display = 'block';
+
+  // HLS cleanup
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+
+  if (type === 'hls' || url.toLowerCase().includes('.m3u8')) {
+    // HLS use hls.js
+    if (Hls.isSupported()) {
+      hlsInstance = new Hls();
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(video);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+      });
+      hlsInstance.on(Hls.Events.ERROR, (e, data) => {
+        if (data.fatal) showPlayerError('HLS stream load nahi ho raha');
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.play().catch(() => {});
+    } else {
+      showPlayerError('Yeh browser HLS support nahi karta');
+    }
+  } else {
+    // Normal MP4
+    video.src = url;
+    video.load();
+    video.play().catch(() => {});
+  }
+}
+
+/* ============================================ */
+/* PLAY EMBED (iframe) */
+/* ============================================ */
+function playEmbed(url) {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.style.display = 'none';
+
+  iframe.style.display = 'block';
+  iframe.src = url;
+
+  // Iframe fail detection (timeout)
+  setTimeout(() => {
+    // If iframe loaded but might be blocked, user can use "Open in new tab"
+  }, 5000);
+}
+
+/* ============================================ */
+/* ERROR HANDLING */
+/* ============================================ */
+video.addEventListener('error', () => {
+  showPlayerError('Video load nahi ho raha. Link check karo ya backup try karo.');
+});
+
+function showPlayerError(msg) {
+  errorMsg.textContent = msg || 'Kuch problem aa gayi.';
+  errorBox.classList.add('show');
+}
+
+function tryBackupSource() {
+  if (!currentBackupUrl) return;
+  errorBox.classList.remove('show');
+  const type = detectLinkType(currentBackupUrl);
+  if (type === 'mp4' || type === 'hls') {
+    playVideoSource(currentBackupUrl, type);
+  } else {
+    playEmbed(currentBackupUrl);
+  }
+}
+
+function openInNewTab() {
+  if (currentVideoUrl) window.open(currentVideoUrl, '_blank');
+}
+
+/* ============================================ */
+/* LINK TYPE DETECT */
 /* ============================================ */
 function detectLinkType(url) {
   if (!url) return 'unknown';
   const lower = url.toLowerCase();
-  
-  // Direct video files
   if (lower.match(/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/)) return 'mp4';
-  // HLS streams
   if (lower.match(/\.m3u8(\?.*)?$/)) return 'hls';
-  // Redirect/embed links (Vercel, custom domains etc.)
   return 'embed';
-}
-
-function updateLinkBadge() {
-  const url = document.getElementById('epVideoUrl').value.trim();
-  const badge = document.getElementById('linkTypeBadge');
-  
-  if (!url) { badge.innerHTML = ''; return; }
-
-  const type = detectLinkType(url);
-  
-  if (type === 'mp4') {
-    badge.innerHTML = '<span class="link-type-badge link-type-mp4">✅ Direct MP4 (Best)</span>';
-  } else if (type === 'hls') {
-    badge.innerHTML = '<span class="link-type-badge link-type-mp4">✅ HLS Stream</span>';
-  } else {
-    badge.innerHTML = '<span class="link-type-badge link-type-embed">🔄 Embed Link (iframe use hoga)</span>';
-  }
-}
-
-document.getElementById('epVideoUrl').addEventListener('input', updateLinkBadge);
-
-/* ============================================ */
-/* POPULATE ANIME DROPDOWN */
-/* ============================================ */
-let allAnimeCache = {};
-
-function populateAnimeDropdown() {
-  const select = document.getElementById('epAnimeSelect');
-  const entries = Object.entries(allAnimeCache);
-  select.innerHTML = '<option value="">-- Choose Anime --</option>' +
-    entries.map(([id, a]) => `<option value="${id}">${a.title}</option>`).join('');
-}
-
-/* ============================================ */
-/* SAVE EPISODE */
-/* ============================================ */
-document.getElementById('saveEpisodeBtn').addEventListener('click', async () => {
-  const animeId = document.getElementById('epAnimeSelect').value;
-  const epNumber = parseInt(document.getElementById('epNumber').value);
-  const epTitle = document.getElementById('epTitle').value.trim();
-  const videoUrl = document.getElementById('epVideoUrl').value.trim();
-  const backupUrl = document.getElementById('epBackupUrl').value.trim();
-  const duration = parseInt(document.getElementById('epDuration').value) || 24;
-
-  if (!animeId) return showToast('Anime select karo', true);
-  if (!epNumber || epNumber < 1) return showToast('Valid episode number daalo', true);
-  if (!videoUrl) return showToast('Video URL zaroori hai', true);
-
-  const linkType = detectLinkType(videoUrl);
-
-  const episodeData = {
-    number: epNumber,
-    title: epTitle || `Episode ${epNumber}`,
-    videoUrl: videoUrl,
-    videoType: linkType,           // ⭐ yeh important hai
-    backupUrl: backupUrl || null,
-    duration: duration,
-    addedAt: Date.now()
-  };
-
-  try {
-    await db.ref(`animeverse/anime/${animeId}/episodes/${epNumber}`).set(episodeData);
-    showToast(`✅ Episode ${epNumber} add ho gaya! (${linkType.toUpperCase()})`);
-    
-    // Clear form fields
-    document.getElementById('epTitle').value = '';
-    document.getElementById('epVideoUrl').value = '';
-    document.getElementById('epBackupUrl').value = '';
-    document.getElementById('epNumber').value = epNumber + 1;
-    document.getElementById('linkTypeBadge').innerHTML = '';
-    
-    // Refresh existing episodes list
-    loadExistingEpisodes(animeId);
-  } catch (err) {
-    showToast('❌ ' + err.message, true);
-  }
-});
-
-document.getElementById('clearEpFormBtn').addEventListener('click', () => {
-  ['epTitle','epVideoUrl','epBackupUrl'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('epNumber').value = '1';
-  document.getElementById('linkTypeBadge').innerHTML = '';
-});
-
-/* ============================================ */
-/* LOAD EXISTING EPISODES */
-/* ============================================ */
-document.getElementById('epAnimeSelect').addEventListener('change', (e) => {
-  const id = e.target.value;
-  if (id) loadExistingEpisodes(id);
-  else document.getElementById('existingEpsCard').style.display = 'none';
-});
-
-function loadExistingEpisodes(animeId) {
-  const card = document.getElementById('existingEpsCard');
-  const list = document.getElementById('existingEpsList');
-
-  db.ref(`animeverse/anime/${animeId}/episodes`).once('value').then(snap => {
-    const eps = snap.val() || {};
-    const entries = Object.entries(eps)
-      .filter(([k, v]) => typeof v === 'object' && v.videoUrl)
-      .sort((a, b) => (a[1].number || 0) - (b[1].number || 0));
-
-    if (!entries.length) {
-      list.innerHTML = '<div class="empty">Abhi koi episode add nahi hua</div>';
-      card.style.display = 'block';
-      return;
-    }
-
-    list.innerHTML = entries.map(([key, ep]) => `
-      <div class="episode-item">
-        <div class="episode-item-info">
-          <strong>Ep ${ep.number}</strong> — ${ep.title || ''}
-          <span class="link-type-badge ${ep.videoType === 'mp4' || ep.videoType === 'hls' ? 'link-type-mp4' : 'link-type-embed'}" style="margin-left:8px;">
-            ${(ep.videoType || 'unknown').toUpperCase()}
-          </span>
-          <p>${ep.videoUrl}</p>
-        </div>
-        <button class="btn btn-red" style="padding:6px 12px;font-size:12px;" onclick="deleteEpisode('${animeId}', '${key}')">🗑️</button>
-      </div>
-    `).join('');
-
-    card.style.display = 'block';
-  });
-}
-
-async function deleteEpisode(animeId, epKey) {
-  if (!confirm('Yeh episode delete karna hai?')) return;
-  await db.ref(`animeverse/anime/${animeId}/episodes/${epKey}`).remove();
-  showToast('🗑️ Episode delete ho gaya');
-  loadExistingEpisodes(animeId);
-}
-
-/* ============================================ */
-/* ANILIST SEARCH */
-/* ============================================ */
-document.getElementById('searchAnilistBtn').addEventListener('click', searchAniList);
-document.getElementById('anilistQuery').addEventListener('keypress', e => {
-  if (e.key === 'Enter') searchAniList();
-});
-
-async function searchAniList() {
-  const query = document.getElementById('anilistQuery').value.trim();
-  if (!query) return;
-
-  const resultsBox = document.getElementById('anilistResults');
-  resultsBox.innerHTML = '<p style="color:#888;">Searching...</p>';
-
-  const gql = `
-    query ($search: String) {
-      Page(perPage: 10) {
-        media(search: $search, type: ANIME) {
-          id
-          title { romaji english }
-          coverImage { large }
-          description
-          genres
-          episodes
-          status
-          averageScore
-        }
-      }
-    }
-  `;
-
-  try {
-    const res = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query: gql, variables: { search: query } })
-    });
-    const data = await res.json();
-    const media = data.data.Page.media;
-
-    if (!media.length) {
-      resultsBox.innerHTML = '<p style="color:#888;">Kuch nahi mila</p>';
-      return;
-    }
-
-    resultsBox.innerHTML = media.map(m => `
-      <div class="search-result" onclick='importFromAniList(${JSON.stringify(JSON.stringify(m)).slice(1, -1)})'>
-        <img src="${m.coverImage.large}" alt="">
-        <div class="search-result-info">
-          <h4>${m.title.english || m.title.romaji}</h4>
-          <p>${(m.genres || []).join(', ')}</p>
-          <p>Episodes: ${m.episodes || '?'} | Score: ${m.averageScore || '?'}</p>
-        </div>
-      </div>
-    `).join('');
-  } catch (err) {
-    resultsBox.innerHTML = '<p style="color:#ff5555;">Error: ' + err.message + '</p>';
-  }
-}
-
-async function importFromAniList(jsonStr) {
-  const m = JSON.parse(jsonStr);
-  const animeData = {
-    title: m.title.english || m.title.romaji,
-    poster: m.coverImage.large,
-    description: (m.description || '').replace(/<[^>]*>/g, '').slice(0, 500),
-    genre: (m.genres || []).join(', '),
-    status: m.status === 'FINISHED' ? 'Completed' : (m.status === 'RELEASING' ? 'Ongoing' : 'Upcoming'),
-    episodes: m.episodes || 12,
-    rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : 8.0,
-    views: 0,
-    createdAt: Date.now()
-  };
-
-  try {
-    await db.ref('animeverse/anime').push(animeData);
-    showToast('✅ ' + animeData.title + ' import ho gaya!');
-  } catch (err) {
-    showToast('❌ ' + err.message, true);
-  }
-}
-
-/* ============================================ */
-/* LOAD ANIME LIST */
-/* ============================================ */
-function loadAnimeList() {
-  db.ref('animeverse/anime').on('value', snap => {
-    allAnimeCache = snap.val() || {};
-    renderAnimeList();
-    populateAnimeDropdown();
-  });
-}
-
-function renderAnimeList(filter = '') {
-  const box = document.getElementById('animeList');
-  const entries = Object.entries(allAnimeCache);
-  const filtered = filter
-    ? entries.filter(([id, a]) => (a.title || '').toLowerCase().includes(filter.toLowerCase()))
-    : entries;
-
-  if (!filtered.length) {
-    box.innerHTML = '<div class="empty">Koi anime nahi mila</div>';
-    return;
-  }
-
-  box.innerHTML = filtered.map(([id, a]) => {
-    const epCount = a.episodes && typeof a.episodes === 'object'
-      ? Object.keys(a.episodes).filter(k => typeof a.episodes[k] === 'object').length
-      : 0;
-    return `
-      <div class="anime-item">
-        <img src="${a.poster || ''}" alt="">
-        <div class="anime-info">
-          <h4>${a.title || 'Untitled'}</h4>
-          <p>${a.genre || 'No genre'} • ${a.status || ''} • ${epCount} eps added • ⭐ ${a.rating || 0}</p>
-        </div>
-        <div class="anime-actions">
-          <button class="btn-blue" onclick="jumpToEpisode('${id}')">📺 Episodes</button>
-          <button class="btn-red" onclick="deleteAnime('${id}', '${(a.title || '').replace(/'/g, "\\'")}')">🗑️</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function jumpToEpisode(animeId) {
-  // Switch to episode tab and select this anime
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector('[data-tab="episodeTab"]').classList.add('active');
-  document.getElementById('episodeTab').classList.add('active');
-  document.getElementById('epAnimeSelect').value = animeId;
-  loadExistingEpisodes(animeId);
-}
-
-document.getElementById('librarySearch').addEventListener('input', e => renderAnimeList(e.target.value));
-
-async function deleteAnime(id, title) {
-  if (!confirm('Delete "' + title + '" ?')) return;
-  await db.ref('animeverse/anime/' + id).remove();
-  showToast('🗑️ Delete ho gaya');
-}
-
-/* ============================================ */
-/* ANALYTICS */
-/* ============================================ */
-function loadStats() {
-  db.ref('animeverse/anime').on('value', snap => {
-    const data = snap.val() || {};
-    const arr = Object.values(data);
-
-    document.getElementById('statTotalAnime').textContent = arr.length;
-    document.getElementById('statOngoing').textContent = arr.filter(a => a.status === 'Ongoing').length;
-    document.getElementById('statCompleted').textContent = arr.filter(a => a.status === 'Completed').length;
-
-    const totalViews = arr.reduce((s, a) => s + (a.views || 0), 0);
-    document.getElementById('statTotalViews').textContent = totalViews;
-
-    const top10 = arr.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
-    document.getElementById('topViewedList').innerHTML = top10.length
-      ? top10.map(a => `
-          <div class="anime-item">
-            <img src="${a.poster || ''}" alt="">
-            <div class="anime-info">
-              <h4>${a.title}</h4>
-              <p>👁️ ${a.views || 0} views</p>
-            </div>
-          </div>
-        `).join('')
-      : '<div class="empty">Abhi koi data nahi</div>';
-  });
 }
 </script>
 
 </body>
- </html>
+</html>
