@@ -1,1052 +1,677 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — AnimeVerse</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<title>Admin Panel - Anime Verse</title>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
 <style>
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-:root { --bg:#0b0b0f; --card:#15151c; --accent:#e50914; --gold:#ffc107;
-  --text:#fff; --muted:#9a9aa5; --border:#2a2a35; --green:#00c853; }
-body { background:var(--bg); color:var(--text);
-  font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+  body { background: #0f0f1a; color: #fff; }
 
-#login { display:grid; place-items:center; min-height:100vh; padding:20px; }
-.login-box { background:var(--card); padding:36px; border-radius:14px;
-  border:1px solid var(--border); width:100%; max-width:400px;
-  box-shadow:0 20px 60px rgba(0,0,0,.5); }
-.login-box .logo { font-size:22px; font-weight:800; text-align:center;
-  margin-bottom:8px; letter-spacing:-.5px; }
-.login-box .logo span { color:var(--accent); }
-.login-box h2 { font-size:15px; text-align:center; color:var(--muted);
-  margin-bottom:26px; font-weight:400; }
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+    position: fixed; inset: 0; z-index: 99999;
+  }
+  .login-box {
+    background: #1a1a2e; padding: 45px 35px; border-radius: 16px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(233, 69, 96, 0.2);
+    border: 1px solid #2a2a4a;
+  }
+  .login-box .icon { text-align: center; font-size: 48px; margin-bottom: 10px; }
+  .login-box h2 {
+    text-align: center; color: #e94560; font-size: 24px; margin-bottom: 8px;
+  }
+  .login-box .sub {
+    text-align: center; color: #888; font-size: 13px; margin-bottom: 30px;
+  }
+  .login-box input {
+    width: 100%; padding: 14px; margin-bottom: 14px;
+    border-radius: 10px; border: 1px solid #333;
+    background: #0f0f1a; color: #fff; font-size: 15px; outline: none;
+    transition: border 0.2s;
+  }
+  .login-box input:focus { border-color: #e94560; }
+  .pwd-wrap { position: relative; }
+  .pwd-wrap #togglePwd {
+    position: absolute; right: 14px; top: 14px;
+    cursor: pointer; font-size: 18px; user-select: none;
+  }
+  #loginBtn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #e94560, #c73650);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 16px; cursor: pointer; font-weight: bold; letter-spacing: 1px;
+    transition: transform 0.2s;
+  }
+  #loginBtn:hover { transform: translateY(-2px); }
+  #loginBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+  #loginError {
+    color: #ff5555; text-align: center; margin-top: 16px;
+    font-size: 14px; min-height: 20px;
+  }
 
-.pass-row { position:relative; margin-bottom:10px; }
-.pass-row input { margin-bottom:0; padding-right:44px; }
-.eye-btn { position:absolute; right:8px; top:50%;
-  transform:translateY(-50%); background:none; border:none;
-  color:var(--muted); font-size:16px; cursor:pointer; padding:6px;
-  border-radius:6px; }
-.eye-btn:hover { color:#fff; background:#1a1a22; }
+  /* ===== ADMIN PANEL ===== */
+  #adminPanel { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px; background: #1a1a2e; border-radius: 12px;
+    margin-bottom: 25px; border: 1px solid #2a2a4a;
+  }
+  .topbar h1 { color: #e94560; font-size: 22px; }
+  #logoutBtn {
+    padding: 10px 20px; background: #e94560; color: #fff;
+    border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+  }
+  .tabs {
+    display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 12px 22px; background: #1a1a2e; color: #aaa;
+    border: 1px solid #2a2a4a; border-radius: 8px; cursor: pointer;
+    font-weight: 600; transition: all 0.2s;
+  }
+  .tab-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
 
-input, select, textarea {
-  width:100%; padding:11px 14px; border-radius:8px;
-  background:#0b0b0f; border:1px solid var(--border); color:#fff;
-  font-size:14px; font-family:inherit; outline:none;
-  transition:border .2s; margin-bottom:10px; }
-input:focus, select:focus, textarea:focus { border-color:var(--accent); }
-textarea { resize:vertical; min-height:80px; }
-label { display:block; font-size:11.5px; font-weight:600;
-  color:#c8c8d0; margin-bottom:5px; text-transform:uppercase;
-  letter-spacing:.5px; }
-input[type=checkbox] { width:auto; margin:0; }
+  .card {
+    background: #1a1a2e; padding: 25px; border-radius: 12px;
+    margin-bottom: 20px; border: 1px solid #2a2a4a;
+  }
+  .card h3 { color: #e94560; margin-bottom: 18px; font-size: 18px; }
+  .form-group { margin-bottom: 15px; }
+  .form-group label {
+    display: block; margin-bottom: 6px; color: #aaa; font-size: 13px;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 12px; background: #0f0f1a;
+    border: 1px solid #333; border-radius: 8px;
+    color: #fff; font-size: 14px; outline: none;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: #e94560;
+  }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .btn {
+    padding: 12px 24px; background: #e94560; color: #fff;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: 14px; transition: transform 0.2s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-green { background: #10b981; }
+  .btn-blue { background: #3b82f6; }
+  .btn-red { background: #ef4444; }
+  .btn-gray { background: #4b5563; }
 
-.btn { padding:11px 18px; border-radius:8px; border:none;
-  font-size:13.5px; font-weight:700; cursor:pointer;
-  display:inline-flex; align-items:center; gap:7px; justify-content:center;
-  transition:all .2s; text-decoration:none; }
-.btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover { background:#c50812; }
-.btn-ghost { background:#1a1a22; color:#d0d0d8;
-  border:1px solid var(--border); }
-.btn-ghost:hover { background:#252530; color:#fff; }
-.btn-green { background:var(--green); color:#002d0d; }
-.btn-green:hover { background:#00a844; }
-.btn-sm { padding:7px 12px; font-size:12px; }
-.btn-full { width:100%; }
+  .anime-item {
+    display: flex; gap: 15px; padding: 15px;
+    background: #0f0f1a; border-radius: 10px;
+    margin-bottom: 12px; align-items: center;
+    border: 1px solid #2a2a4a;
+  }
+  .anime-item img {
+    width: 60px; height: 80px; object-fit: cover;
+    border-radius: 6px; flex-shrink: 0;
+  }
+  .anime-info { flex: 1; min-width: 0; }
+  .anime-info h4 { color: #fff; margin-bottom: 4px; }
+  .anime-info p { color: #888; font-size: 12px; }
+  .anime-actions { display: flex; gap: 8px; }
+  .anime-actions button {
+    padding: 8px 12px; border-radius: 6px; border: none;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+  }
 
-#dash { display:none; }
-#dash.on { display:block; }
+  .search-result {
+    display: flex; gap: 12px; padding: 12px;
+    background: #0f0f1a; border-radius: 8px;
+    margin-bottom: 10px; cursor: pointer;
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .search-result:hover { border-color: #e94560; }
+  .search-result img {
+    width: 50px; height: 65px; object-fit: cover; border-radius: 5px;
+  }
+  .search-result-info { flex: 1; }
+  .search-result-info h4 { font-size: 14px; margin-bottom: 4px; }
+  .search-result-info p { font-size: 12px; color: #888; }
 
-.topbar { position:sticky; top:0; z-index:100;
-  background:rgba(11,11,15,.98); backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-  padding:12px 20px; display:flex; align-items:center;
-  justify-content:space-between; gap:12px; }
-.topbar .logo { font-size:17px; font-weight:800; }
-.topbar .logo span { color:var(--accent); }
-.topbar .user { font-size:12px; color:var(--muted); margin-right:8px; }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, #1a1a2e, #252545);
+    padding: 20px; border-radius: 12px;
+    border: 1px solid #2a2a4a; text-align: center;
+  }
+  .stat-card .num { font-size: 28px; color: #e94560; font-weight: bold; }
+  .stat-card .label { color: #aaa; font-size: 13px; margin-top: 5px; }
 
-.container { max-width:1100px; margin:0 auto; padding:20px; }
+  .toast {
+    position: fixed; bottom: 30px; right: 30px;
+    padding: 15px 25px; background: #10b981; color: #fff;
+    border-radius: 10px; font-weight: 600; z-index: 99999;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { background: #ef4444; }
 
-.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:12px; margin-bottom:24px; }
-.stat-card { background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:18px; position:relative; overflow:hidden; }
-.stat-card::before { content:''; position:absolute; top:0; left:0;
-  width:3px; height:100%; background:var(--accent); }
-.stat-card .num { font-size:26px; font-weight:800;
-  letter-spacing:-1px; margin-bottom:4px; }
-.stat-card .lbl { font-size:11px; color:var(--muted);
-  text-transform:uppercase; letter-spacing:.7px; font-weight:700; }
-.stat-card.green::before { background:var(--green); }
-.stat-card.gold::before { background:var(--gold); }
-.stat-card.blue::before { background:#2196f3; }
-
-.tabs { display:flex; gap:8px; margin-bottom:22px; overflow-x:auto;
-  padding-bottom:4px; scrollbar-width:none; }
-.tabs::-webkit-scrollbar { display:none; }
-.tab { padding:9px 18px; border-radius:8px; background:#1a1a22;
-  border:1px solid var(--border); color:#d0d0d8; font-size:13px;
-  font-weight:600; cursor:pointer; white-space:nowrap;
-  transition:all .2s; }
-.tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
-.tab:hover:not(.on) { background:#252530; }
-
-.panel { display:none; }
-.panel.on { display:block; }
-.panel-box { background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:22px; margin-bottom:20px; }
-.panel-box h2 { font-size:15px; margin-bottom:18px;
-  padding-bottom:12px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:8px; }
-.panel-box h2::before { content:''; width:3px; height:14px;
-  background:var(--accent); border-radius:2px; }
-
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-@media (max-width:640px) { .grid-2 { grid-template-columns:1fr; } }
-
-.search-row { display:flex; gap:8px; margin-bottom:20px; }
-.search-row input { margin:0; flex:1; }
-.search-row button { padding:11px 22px; flex-shrink:0; }
-
-.results-grid { display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
-.result-card { background:#0b0b0f; border-radius:10px; overflow:hidden;
-  border:1px solid var(--border); position:relative; }
-.result-card img { width:100%; height:210px; object-fit:cover;
-  display:block; }
-.result-card .rc-body { padding:10px; }
-.result-card h4 { font-size:12.5px; font-weight:700; line-height:1.3;
-  margin-bottom:5px; display:-webkit-box; -webkit-line-clamp:2;
-  -webkit-box-orient:vertical; overflow:hidden; min-height:32px; }
-.result-card .meta { display:flex; justify-content:space-between;
-  align-items:center; margin-bottom:8px; }
-.result-card .rating { font-size:11px; color:var(--gold); font-weight:800; }
-.result-card .year { font-size:10.5px; color:var(--muted); }
-.result-card button { width:100%; padding:7px; border-radius:6px;
-  font-size:11.5px; font-weight:700; cursor:pointer;
-  border:none; transition:all .2s; }
-.result-card button.add { background:var(--green); color:#002d0d; }
-.result-card button.add:hover { background:#00a844; }
-.result-card button.added { background:#1a1a22; color:var(--muted);
-  cursor:not-allowed; }
-
-.lib-grid { display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
-.lib-card { background:#0b0b0f; border-radius:10px; overflow:hidden;
-  border:1px solid var(--border); position:relative; }
-.lib-card img { width:100%; height:220px; object-fit:cover; display:block; }
-.lib-card .lc-body { padding:10px; }
-.lib-card h4 { font-size:12.5px; font-weight:700; line-height:1.3;
-  margin-bottom:6px; display:-webkit-box; -webkit-line-clamp:2;
-  -webkit-box-orient:vertical; overflow:hidden; min-height:32px; }
-.lib-card .meta { font-size:10.5px; color:var(--muted);
-  margin-bottom:9px; }
-.lib-card .actions { display:grid; grid-template-columns:1fr 1fr 1fr;
-  gap:5px; }
-.lib-card .actions button { padding:6px; border-radius:5px;
-  font-size:13px; border:1px solid var(--border); cursor:pointer;
-  background:#16161e; color:#d0d0d8; transition:all .2s; }
-.lib-card .actions button:hover { background:#252530; color:#fff; }
-.lib-card .actions button.del:hover { background:var(--accent);
-  border-color:var(--accent); color:#fff; }
-
-.ep-list { display:flex; flex-direction:column; gap:8px; }
-.ep-item { background:#0b0b0f; border:1px solid var(--border);
-  border-radius:10px; padding:12px; display:flex; gap:12px;
-  align-items:center; }
-.ep-item img { width:60px; height:44px; object-fit:cover;
-  border-radius:6px; flex-shrink:0; }
-.ep-item .ep-meta { flex:1; min-width:0; }
-.ep-item h4 { font-size:13px; font-weight:700; margin-bottom:3px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ep-item small { font-size:11px; color:var(--muted); }
-.ep-item .ep-actions { display:flex; gap:5px; flex-shrink:0; }
-.ep-item .ep-actions button { width:32px; height:32px;
-  border-radius:6px; border:1px solid var(--border); background:#16161e;
-  color:#d0d0d8; cursor:pointer; font-size:13px;
-  display:grid; place-items:center; transition:all .2s; }
-.ep-item .ep-actions button:hover { background:#252530; color:#fff; }
-.ep-item .ep-actions button.del:hover { background:var(--accent);
-  border-color:var(--accent); color:#fff; }
-
-.top-list { display:flex; flex-direction:column; gap:12px; }
-.top-row { display:grid; grid-template-columns:26px 1fr auto;
-  gap:12px; align-items:center; }
-.top-row .rank { font-size:16px; font-weight:800; color:var(--muted); }
-.top-row .bar-wrap { background:#0b0b0f; border-radius:4px;
-  height:24px; position:relative; overflow:hidden; }
-.top-row .bar { height:100%; background:linear-gradient(90deg,
-  var(--accent), #ff6b6b); border-radius:4px; transition:width .5s; }
-.top-row .bar-label { position:absolute; left:10px; top:50%;
-  transform:translateY(-50%); font-size:12px; font-weight:700; z-index:2; }
-.top-row .count { font-size:12px; color:var(--muted); font-weight:700; }
-
-.activity-list { display:flex; flex-direction:column; gap:8px;
-  max-height:280px; overflow-y:auto; }
-.act-item { background:#0b0b0f; padding:10px 12px; border-radius:8px;
-  border:1px solid var(--border); font-size:12.5px;
-  display:flex; align-items:center; gap:10px; }
-.act-item .icon { font-size:16px; }
-.act-item .time { margin-left:auto; color:var(--muted); font-size:11px; }
-
-.modal { position:fixed; inset:0; background:rgba(0,0,0,.8);
-  backdrop-filter:blur(6px); display:none; z-index:500;
-  align-items:center; justify-content:center; padding:20px; }
-.modal.on { display:flex; }
-.modal-box { background:var(--card); border:1px solid var(--border);
-  border-radius:14px; padding:24px; width:100%; max-width:480px;
-  max-height:90vh; overflow-y:auto;
-  box-shadow:0 30px 80px rgba(0,0,0,.8); }
-.modal-box h3 { font-size:16px; margin-bottom:18px;
-  padding-bottom:12px; border-bottom:1px solid var(--border); }
-.modal-actions { display:flex; gap:10px; margin-top:18px; }
-.modal-actions .btn { flex:1; }
-
-.toast { position:fixed; bottom:24px; left:50%;
-  transform:translateX(-50%) translateY(120px);
-  background:var(--green); color:#002d0d;
-  padding:12px 22px; border-radius:10px; font-size:13.5px;
-  font-weight:700; transition:transform .3s; z-index:999;
-  box-shadow:0 14px 40px rgba(0,200,83,.4); }
-.toast.on { transform:translateX(-50%) translateY(0); }
-.toast.err { background:var(--accent); color:#fff;
-  box-shadow:0 14px 40px rgba(229,9,20,.5); }
-
-.loader { display:inline-block; width:14px; height:14px;
-  border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
-  border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.empty { text-align:center; padding:40px 20px; color:var(--muted);
-  font-size:13.5px; }
+  .empty {
+    text-align: center; padding: 40px; color: #666; font-size: 14px;
+  }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login">
+<!-- ============================================ -->
+<!-- LOGIN SCREEN -->
+<!-- ============================================ -->
+<div id="loginScreen">
   <div class="login-box">
-    <div class="logo">ANIME<span>VERSE</span></div>
-    <h2>🔒 Admin Panel</h2>
-    <label>Password</label>
-    <div class="pass-row">
-      <input type="password" id="passIn" placeholder="Password daalo"
-             onkeypress="if(event.key==='Enter') doLogin()">
-      <button class="eye-btn" type="button" onclick="toggleEye()">👁</button>
+    <div class="icon">🔐</div>
+    <h2>Admin Login</h2>
+    <p class="sub">Anime Verse Control Panel</p>
+
+    <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
+    <div class="pwd-wrap">
+      <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+      <span id="togglePwd">👁️</span>
     </div>
-    <button class="btn btn-primary btn-full" onclick="doLogin()"
-            style="margin-top:10px;">🔐 Login</button>
-    <p id="loginError" style="color:var(--accent);font-size:12px;
-       text-align:center;margin-top:12px;display:none;"></p>
+
+    <button id="loginBtn">LOGIN</button>
+    <p id="loginError"></p>
   </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dash">
+
+<!-- ============================================ -->
+<!-- ADMIN PANEL -->
+<!-- ============================================ -->
+<div id="adminPanel">
+
   <div class="topbar">
-    <div class="logo">ANIME<span>VERSE</span></div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span class="user" id="userEmail">Admin</span>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
-    </div>
+    <h1>🎛️ Anime Verse Admin</h1>
+    <button id="logoutBtn">Logout</button>
   </div>
 
-  <div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="addTab">➕ Add Anime</button>
+    <button class="tab-btn" data-tab="searchTab">🔍 AniList Search</button>
+    <button class="tab-btn" data-tab="listTab">📚 Manage Library</button>
+    <button class="tab-btn" data-tab="statsTab">📊 Analytics</button>
+  </div>
 
-    <div class="stats">
-      <div class="stat-card"><div class="num" id="statAnime">0</div><div class="lbl">Anime</div></div>
-      <div class="stat-card green"><div class="num" id="statEps">0</div><div class="lbl">Episodes</div></div>
-      <div class="stat-card blue"><div class="num" id="statViews">0</div><div class="lbl">Views</div></div>
-      <div class="stat-card gold"><div class="num" id="statHours">0</div><div class="lbl">Watch Hours</div></div>
-    </div>
+  <!-- ===== TAB 1: ADD MANUAL ===== -->
+  <div id="addTab" class="tab-content active">
+    <div class="card">
+      <h3>Add New Anime (Manual)</h3>
 
-    <div class="tabs">
-      <div class="tab on" data-tab="tSearch">🔍 AniList</div>
-      <div class="tab" data-tab="tLibrary">📚 Library</div>
-      <div class="tab" data-tab="tAnalytics">📊 Analytics</div>
-      <div class="tab" data-tab="tManual">✏️ Manual Add</div>
-    </div>
-
-    <div class="panel on" id="tSearch">
-      <div class="panel-box">
-        <h2>🔍 AniList Se Search Karo</h2>
-        <div class="search-row">
-          <input type="text" id="searchInput"
-                 placeholder="Anime ka naam likho... (e.g. Naruto)"
-                 onkeypress="if(event.key==='Enter') doSearch()">
-          <button class="btn btn-primary" onclick="doSearch()">Search</button>
-        </div>
-        <div id="searchResults"></div>
-        <div id="searchPager" style="display:none;justify-content:center;
-             gap:8px;margin-top:18px;">
-          <button class="btn btn-ghost btn-sm" onclick="changePage(-1)">← Prev</button>
-          <span id="pageInfo" style="padding:8px 14px;font-size:13px;
-                color:var(--muted);"></span>
-          <button class="btn btn-ghost btn-sm" onclick="changePage(1)">Next →</button>
-        </div>
+      <div class="form-group">
+        <label>Anime Title *</label>
+        <input id="addTitle" type="text" placeholder="e.g. Naruto">
       </div>
-    </div>
 
-    <div class="panel" id="tLibrary">
-      <div class="panel-box">
-        <h2>📚 Meri Library (<span id="libCount">0</span>)</h2>
-        <input type="text" id="libSearch" placeholder="🔍 Library me search karo..."
-               oninput="renderLibrary()">
-        <div class="lib-grid" id="libGrid" style="margin-top:14px;"></div>
+      <div class="form-group">
+        <label>Poster Image URL *</label>
+        <input id="addPoster" type="text" placeholder="https://...">
       </div>
-    </div>
 
-    <div class="panel" id="tAnalytics">
-      <div class="panel-box">
-        <h2>📈 Top 10 Most Watched</h2>
-        <div class="top-list" id="topList"></div>
-      </div>
-      <div class="panel-box">
-        <h2>🕐 Recent Activity</h2>
-        <div class="activity-list" id="activityList"></div>
-      </div>
-      <div class="panel-box">
-        <h2>📅 Daily Views (Last 7 Days)</h2>
-        <div id="dailyChart"></div>
-      </div>
-    </div>
-
-    <div class="panel" id="tManual">
-      <div class="panel-box">
-        <h2>✏️ <span id="editorTitle">Manual Anime Editor</span></h2>
-        <div class="grid-2">
-          <div>
-            <label>Anime ID (number)</label>
-            <input type="number" id="mId" placeholder="jaise 15">
-          </div>
-          <div>
-            <label>Rating (0-10)</label>
-            <input type="number" step="0.1" id="mRating" placeholder="8.5">
-          </div>
-        </div>
-        <label>Title</label>
-        <input type="text" id="mTitle" placeholder="Demon Slayer">
-        <div class="grid-2">
-          <div>
-            <label>Poster (URL ya seed)</label>
-            <input type="text" id="mPoster" placeholder="https://... ya poster15">
-          </div>
-          <div>
-            <label>Banner (URL ya seed)</label>
-            <input type="text" id="mBanner" placeholder="https://... ya banner15">
-          </div>
-        </div>
-        <div class="grid-2">
-          <div>
-            <label>Language</label>
-            <select id="mLang">
-              <option value="hi">🇮🇳 Hindi</option>
-              <option value="jp">🇯🇵 Japanese</option>
-              <option value="en">🇬🇧 English</option>
-              <option value="sub">📝 Subbed</option>
-            </select>
-          </div>
-          <div>
-            <label>Status</label>
-            <select id="mStatus">
-              <option value="ONGOING">ONGOING</option>
-              <option value="FINISHED">FINISHED</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid-2">
-          <div>
-            <label>Year</label>
-            <input type="number" id="mYear" placeholder="2025">
-          </div>
-          <div>
-            <label>Top 10 Rank (khali = none)</label>
-            <input type="number" id="mRank" placeholder="1-10">
-          </div>
-        </div>
-        <label>Genres (comma se separate)</label>
-        <input type="text" id="mGenres" placeholder="Action, Drama, Fantasy">
+      <div class="form-group">
         <label>Description</label>
-        <textarea id="mDesc" placeholder="Anime ki kahani..."></textarea>
-        <label style="display:flex;align-items:center;gap:8px;
-               text-transform:none;font-size:13.5px;">
-          <input type="checkbox" id="mNew"> New anime (NEW badge dikhega)
-        </label>
-        <div style="display:flex;gap:10px;margin-top:16px;">
-          <button class="btn btn-green" onclick="saveManual()" style="flex:1;">
-            💾 Save Anime
-          </button>
-          <button class="btn btn-ghost" onclick="clearManual()">Clear</button>
-        </div>
+        <textarea id="addDesc" placeholder="Short description..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Genre</label>
+        <input id="addGenre" type="text" placeholder="e.g. Action, Adventure">
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select id="addStatus">
+          <option value="Ongoing">Ongoing</option>
+          <option value="Completed">Completed</option>
+          <option value="Upcoming">Upcoming</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Total Episodes</label>
+        <input id="addEpisodes" type="number" placeholder="e.g. 24" value="12">
+      </div>
+
+      <div class="form-group">
+        <label>Rating (0 - 10)</label>
+        <input id="addRating" type="number" step="0.1" placeholder="e.g. 8.5" value="8.0">
+      </div>
+
+      <div class="form-group">
+        <label>Video URL (Episode 1)</label>
+        <input id="addVideo" type="text" placeholder="https://...mp4 or m3u8">
+      </div>
+
+      <button class="btn" id="saveAnimeBtn">💾 Save Anime</button>
+    </div>
+  </div>
+
+  <!-- ===== TAB 2: ANILIST SEARCH ===== -->
+  <div id="searchTab" class="tab-content">
+    <div class="card">
+      <h3>Search Anime from AniList</h3>
+      <div class="form-group">
+        <input id="anilistQuery" type="text" placeholder="Type anime name... e.g. One Piece">
+      </div>
+      <button class="btn btn-blue" id="searchAnilistBtn">🔍 Search</button>
+      <div id="anilistResults" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 3: MANAGE LIBRARY ===== -->
+  <div id="listTab" class="tab-content">
+    <div class="card">
+      <h3>Manage Library</h3>
+      <div class="form-group">
+        <input id="librarySearch" type="text" placeholder="🔍 Search in library...">
+      </div>
+      <div id="animeList"></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 4: ANALYTICS ===== -->
+  <div id="statsTab" class="tab-content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="num" id="statTotalAnime">0</div>
+        <div class="label">Total Anime</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statTotalViews">0</div>
+        <div class="label">Total Views</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statOngoing">0</div>
+        <div class="label">Ongoing</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statCompleted">0</div>
+        <div class="label">Completed</div>
       </div>
     </div>
 
-  </div>
-</div>
-
-<!-- EPISODES MODAL -->
-<div class="modal" id="epModal">
-  <div class="modal-box">
-    <h3>🎬 <span id="epModalTitle">Episodes</span></h3>
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button class="btn btn-green btn-sm" onclick="openEpForm()">
-        + Naya Episode
-      </button>
-      <select id="seasonSelect" onchange="renderEpisodes()"
-              style="margin:0;flex:1;max-width:140px;"></select>
-    </div>
-    <div class="ep-list" id="epList"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('epModal')">Close</button>
+    <div class="card">
+      <h3>Top 10 Most Viewed</h3>
+      <div id="topViewedList"></div>
     </div>
   </div>
+
 </div>
 
-<!-- EPISODE FORM MODAL -->
-<div class="modal" id="epFormModal">
-  <div class="modal-box">
-    <h3 id="epFormTitle">➕ Add Episode</h3>
-    <div class="grid-2">
-      <div>
-        <label>Episode #</label>
-        <input type="number" id="fEpNum" placeholder="8">
-      </div>
-      <div>
-        <label>Duration</label>
-        <input type="text" id="fEpDur" placeholder="24:00">
-      </div>
-    </div>
-    <label>Title</label>
-    <input type="text" id="fEpTitle" placeholder="Brothers">
-    <label>Thumbnail (seed ya URL)</label>
-    <input type="text" id="fEpThumb" placeholder="ep1h">
-    <label>Video URL 1080p / default (.mp4 ya .m3u8) *</label>
-    <input type="url" id="fEpVideo" placeholder="https://...">
-    <label>Video URL 720p (optional)</label>
-    <input type="url" id="fEpVideo720" placeholder="https://...">
-    <label>Video URL 480p (optional)</label>
-    <input type="url" id="fEpVideo480" placeholder="https://...">
-    <div class="modal-actions">
-      <button class="btn btn-green" onclick="saveEpisode()" style="flex:2;">
-        💾 Save Episode
-      </button>
-      <button class="btn btn-ghost" onclick="closeModal('epFormModal')">Cancel</button>
-    </div>
-  </div>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
-<div class="toast" id="toast">Saved!</div>
 
-<!-- ============================================================
-     ⚠️ IMPORTANT: data.js pehle load hoti hai (firebase config
-     already usme hai). Admin script me dobara config NAHI likhna!
-     ============================================================ -->
-<script src="data.js"></script>
 <script>
-/* ============================================================
-   🔐 SIMPLE PASSWORD LOGIN
-   👇 YAHAN APNA PASSWORD SET KARO
-   ============================================================ */
-const ADMIN_PASSWORD = "anistreamx123";
+/* ============================================ */
+/* FIREBASE CONFIG - APNA ASLI CONFIG YAHA DAALO */
+/* ============================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBHCaQPCzEJ0QTPZaXgx0xuk4f6eb_OuRU",
+  authDomain: "anistreamx-903a3.firebaseapp.com",
+  databaseURL: "https://anistreamx-903a3-default-rtdb.firebaseio.com",
+  projectId: "anistreamx-903a3",
+  storageBucket: "anistreamx-903a3.firebasestorage.app",
+  messagingSenderId: "670816164518",
+  appId: "1:670816164518:web:6a3222731f6b22696d3267",
+  measurementId: "G-DW23SVGE6W"
+};
 
-/* Eye toggle (password dikhane ke liye) */
-function toggleEye() {
-  const inp = document.getElementById('passIn');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
+
+/* ============================================ */
+/* INIT FIREBASE */
+/* ============================================ */
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
+const auth = firebase.auth();
+const db = firebase.database();
 
-/* Login */
-function doLogin() {
-  const inp = document.getElementById('passIn');
-  const errEl = document.getElementById('loginError');
-  const pass = (inp.value || '').trim();   /* trim important — space hataata hai */
+/* ============================================ */
+/* ELEMENTS */
+/* ============================================ */
+const loginScreen = document.getElementById('loginScreen');
+const adminPanel  = document.getElementById('adminPanel');
+const loginBtn    = document.getElementById('loginBtn');
+const loginError  = document.getElementById('loginError');
+const emailInput  = document.getElementById('loginEmail');
+const pwdInput    = document.getElementById('loginPassword');
+const togglePwd   = document.getElementById('togglePwd');
+const toastEl     = document.getElementById('toast');
 
-  console.log('Password typed:', JSON.stringify(pass));
-  console.log('Password expected:', JSON.stringify(ADMIN_PASSWORD));
-  console.log('Match:', pass === ADMIN_PASSWORD);
-
-  if (pass === ADMIN_PASSWORD) {
-    sessionStorage.setItem('adminAuth', 'true');
-    errEl.style.display = 'none';
-    showDashboard();
+/* ============================================ */
+/* PASSWORD SHOW/HIDE */
+/* ============================================ */
+togglePwd.addEventListener('click', () => {
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    togglePwd.textContent = '🙈';
   } else {
-    errEl.style.display = 'block';
-    errEl.textContent = '❌ Galat password! (typed: "' + pass + '")';
-    inp.value = '';
-    inp.focus();
-  }
-}
-
-/* Logout */
-function doLogout() {
-  if (!confirm('Logout karein?')) return;
-  sessionStorage.removeItem('adminAuth');
-  location.reload();
-}
-
-/* Dashboard dikhao */
-function showDashboard() {
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('dash').classList.add('on');
-  /* initAdmin only if it exists */
-  if (typeof initAdmin === 'function') {
-    try { initAdmin(); } catch (e) { console.error('initAdmin error:', e); }
-  }
-}
-
-/* Auto-login check */
-window.addEventListener('DOMContentLoaded', () => {
-  if (sessionStorage.getItem('adminAuth') === 'true') {
-    showDashboard();
+    pwdInput.type = 'password';
+    togglePwd.textContent = '👁️';
   }
 });
 
-/* ============================================================
-   🎯 ADMIN INIT
-   ============================================================ */
-let currentPage = 1;
-let currentQuery = '';
-let lastResults = null;
-let editingAnimeId = null;
-let currentEpAnimeId = null;
-let editingEpNum = null;
+/* ============================================ */
+/* TOAST HELPER */
+/* ============================================ */
+function showToast(msg, isError = false) {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { toastEl.className = 'toast'; }, 3000);
+}
 
-function initAdmin() {
-  /* Wait until Firebase DB ready (from data.js) */
-  if (typeof onDBReady !== 'function') {
-    console.error('onDBReady not found — data.js failed to load');
-    return;
+/* ============================================ */
+/* AUTH STATE CHECK */
+/* ============================================ */
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    loginScreen.style.display = 'none';
+    adminPanel.style.display = 'block';
+    loadAnimeList();
+    loadStats();
+  } else {
+    loginScreen.style.display = 'flex';
+    adminPanel.style.display = 'none';
   }
-  onDBReady(() => {
-    updateStats();
-    renderLibrary();
-    renderAnalytics();
-    if (typeof window.onDataUpdate !== 'function') {
-      window.onDataUpdate = () => {
-        updateStats();
-        renderLibrary();
-        renderAnalytics();
-      };
-    }
-  });
+});
 
-  /* Tabs */
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
-      tab.classList.add('on');
-      document.getElementById(tab.dataset.tab).classList.add('on');
-    });
-  });
+/* ============================================ */
+/* LOGIN */
+/* ============================================ */
+loginBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const password = pwdInput.value;
 
-  /* Live analytics (agar statsRef available hai) */
-  if (typeof statsRef !== 'undefined') {
-    statsRef.on('value', () => {
-      updateStats();
-      renderAnalytics();
-    });
-  }
-}
-
-/* ============================================================
-   📊 STATS
-   ============================================================ */
-function updateStats() {
-  document.getElementById('statAnime').textContent = animeDB.length;
-  const totalEps = animeDB.reduce((s, a) =>
-    s + (a.seasons || []).reduce((x, y) =>
-      x + (y.episodes?.length || 0), 0), 0);
-  document.getElementById('statEps').textContent = totalEps;
-
-  statsRef.once('value').then(snap => {
-    const d = snap.val() || {};
-    document.getElementById('statViews').textContent =
-      (d.totalViews || 0).toLocaleString();
-    const hours = Math.floor((d.totalWatchTime || 0) / 3600);
-    document.getElementById('statHours').textContent = hours;
-  }).catch(() => {});
-}
-
-/* ============================================================
-   🔍 ANILIST SEARCH
-   ============================================================ */
-async function doSearch() {
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) return toast('Kuch likho search me', true);
-  currentQuery = q;
-  currentPage = 1;
-  await runSearch();
-}
-
-async function runSearch() {
-  const box = document.getElementById('searchResults');
-  box.innerHTML = '<div class="empty"><div class="loader"></div> Searching AniList...</div>';
-  try {
-    const data = await searchAniList(currentQuery, currentPage);
-    if (!data || !data.media.length) {
-      box.innerHTML = '<div class="empty">Kuch nahi mila. Dusra naam try karo.</div>';
-      document.getElementById('searchPager').style.display = 'none';
-      return;
-    }
-    lastResults = data;
-    box.innerHTML = '<div class="results-grid">' + data.media.map((m, i) => {
-      const title = m.title.english || m.title.romaji || 'Untitled';
-      const added = animeDB.some(a => a.anilistId === m.id);
-      const img = m.coverImage.extraLarge || m.coverImage.large;
-      return `
-        <div class="result-card">
-          <img src="${img}" alt="" loading="lazy">
-          <div class="rc-body">
-            <h4>${escapeHtml(title)}</h4>
-            <div class="meta">
-              <span class="rating">★ ${m.averageScore ? (m.averageScore/10).toFixed(1) : 'N/A'}</span>
-              <span class="year">${m.seasonYear || m.format || ''}</span>
-            </div>
-            <button class="${added ? 'added' : 'add'}"
-                    ${added ? 'disabled' : ''}
-                    onclick="addFromAniList(${i})">
-              ${added ? '✓ Added' : '+ Add'}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('') + '</div>';
-
-    document.getElementById('searchPager').style.display = 'flex';
-    document.getElementById('pageInfo').textContent =
-      `Page ${data.pageInfo.currentPage} / ${data.pageInfo.lastPage}`;
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
-  }
-}
-
-function changePage(dir) {
-  if (!lastResults) return;
-  const newPage = currentPage + dir;
-  if (newPage < 1) return;
-  if (dir > 0 && !lastResults.pageInfo.hasNextPage) return;
-  currentPage = newPage;
-  runSearch();
-}
-
-async function addFromAniList(index) {
-  const a = lastResults.media[index];
-  const customId = getNextId();
-  const anime = anilistToAnime(a, customId);
-
-  if (!confirm(`"${anime.title}" ko library me add karein?\nID: ${customId}`)) return;
-
-  try {
-    await animeRef.child('anime_' + customId).set(anime);
-    await logActivity('add', anime.title);
-    toast(`✅ "${anime.title}" added!`);
-    runSearch();
-  } catch (e) {
-    toast('Error: ' + e.message, true);
-  }
-}
-
-function getNextId() {
-  if (!animeDB.length) return 1;
-  return Math.max(...animeDB.map(a => a.id || 0)) + 1;
-}
-
-/* ============================================================
-   📚 LIBRARY
-   ============================================================ */
-function renderLibrary() {
-  const grid = document.getElementById('libGrid');
-  const filter = (document.getElementById('libSearch')?.value || '').toLowerCase();
-  let list = animeDB;
-  if (filter) list = list.filter(a => a.title.toLowerCase().includes(filter));
-
-  document.getElementById('libCount').textContent = animeDB.length;
-
-  if (!list.length) {
-    grid.innerHTML = '<div class="empty">Koi anime nahi. Pehle AniList se add karo.</div>';
+  if (!email || !password) {
+    loginError.textContent = '⚠️ Email aur Password dono bharo';
     return;
   }
 
-  grid.innerHTML = list.map(a => {
-    const totalEps = (a.seasons || []).reduce((s, x) =>
-      s + (x.episodes?.length || 0), 0);
-    return `
-      <div class="lib-card">
-        <img src="${imgUrl(a.poster, 300, 450)}" alt="${a.title}" loading="lazy">
-        <div class="lc-body">
-          <h4>${escapeHtml(a.title)}</h4>
-          <div class="meta">ID:${a.id} · ★${a.rating} · ${totalEps} ep</div>
-          <div class="actions">
-            <button onclick="openEpisodes(${a.id})" title="Episodes">🎬</button>
-            <button onclick="loadForEdit(${a.id})" title="Edit">✏️</button>
-            <button class="del" onclick="deleteAnime(${a.id})" title="Delete">🗑️</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
+  loginBtn.textContent = 'Logging in...';
+  loginBtn.disabled = true;
+  loginError.textContent = '';
 
-/* ============================================================
-   ✏️ LOAD FOR EDIT
-   ============================================================ */
-function loadForEdit(id) {
-  const a = getAnime(id);
-  if (!a) return;
-  editingAnimeId = id;
-  document.getElementById('editorTitle').textContent = 'Edit: ' + a.title;
-  document.getElementById('mId').value = a.id;
-  document.getElementById('mTitle').value = a.title;
-  document.getElementById('mPoster').value = a.poster || '';
-  document.getElementById('mBanner').value = a.banner || '';
-  document.getElementById('mRating').value = a.rating || '';
-  document.getElementById('mLang').value = a.lang || 'jp';
-  document.getElementById('mStatus').value = a.status || 'ONGOING';
-  document.getElementById('mYear').value = a.year || '';
-  document.getElementById('mRank').value = a.rank || '';
-  document.getElementById('mGenres').value = (a.genres || []).join(', ');
-  document.getElementById('mDesc').value = a.description || '';
-  document.getElementById('mNew').checked = !!a.isNew;
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (err) {
+    loginBtn.textContent = 'LOGIN';
+    loginBtn.disabled = false;
 
-  document.querySelector('[data-tab="tManual"]').click();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  toast('Edit mode ON — changes karo aur Save dabao');
-}
+    const errors = {
+      'auth/wrong-password': '❌ Galat Password',
+      'auth/user-not-found': '❌ Yeh Email registered nahi hai',
+      'auth/invalid-email': '❌ Email galat format mein hai',
+      'auth/too-many-requests': '⏳ Bahut baar try kiya, 5 min baad try karo',
+      'auth/network-request-failed': '🌐 Internet check karo',
+      'auth/invalid-credential': '❌ Galat Email ya Password'
+    };
+    loginError.textContent = errors[err.code] || '❌ ' + err.message;
+  }
+});
 
-function clearManual() {
-  editingAnimeId = null;
-  document.getElementById('editorTitle').textContent = 'Manual Anime Editor';
-  ['mId','mTitle','mPoster','mBanner','mRating','mYear','mRank','mGenres','mDesc']
-    .forEach(k => document.getElementById(k).value = '');
-  document.getElementById('mNew').checked = false;
-}
+pwdInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+emailInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') pwdInput.focus();
+});
 
-/* ============================================================
-   💾 SAVE MANUAL
-   ============================================================ */
-async function saveManual() {
-  const id = Number(document.getElementById('mId').value);
-  const title = document.getElementById('mTitle').value.trim();
-  if (!id || !title) return toast('ID aur Title zaroori hai', true);
+/* ============================================ */
+/* LOGOUT */
+/* ============================================ */
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if (confirm('Logout karna chahte ho?')) {
+    auth.signOut().then(() => location.reload());
+  }
+});
 
-  const existing = editingAnimeId === id ? getAnime(id) : null;
+/* ============================================ */
+/* TABS */
+/* ============================================ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
 
-  const anime = {
-    id, title,
-    poster: document.getElementById('mPoster').value.trim() || 'poster' + id,
-    banner: document.getElementById('mBanner').value.trim() || 'banner' + id,
-    rating: Number(document.getElementById('mRating').value) || 0,
-    lang: document.getElementById('mLang').value,
-    status: document.getElementById('mStatus').value,
-    year: Number(document.getElementById('mYear').value) || new Date().getFullYear(),
-    genres: document.getElementById('mGenres').value
-      .split(',').map(s => s.trim()).filter(Boolean),
-    description: document.getElementById('mDesc').value.trim(),
-    isNew: document.getElementById('mNew').checked,
-    seasons: existing?.seasons || [{ number: 1, episodes: [] }]
+/* ============================================ */
+/* ADD MANUAL ANIME */
+/* ============================================ */
+document.getElementById('saveAnimeBtn').addEventListener('click', async () => {
+  const title = document.getElementById('addTitle').value.trim();
+  const poster = document.getElementById('addPoster').value.trim();
+
+  if (!title || !poster) {
+    showToast('Title aur Poster zaroori hai', true);
+    return;
+  }
+
+  const animeData = {
+    title,
+    poster,
+    description: document.getElementById('addDesc').value.trim(),
+    genre: document.getElementById('addGenre').value.trim(),
+    status: document.getElementById('addStatus').value,
+    episodes: parseInt(document.getElementById('addEpisodes').value) || 12,
+    rating: parseFloat(document.getElementById('addRating').value) || 8.0,
+    videoUrl: document.getElementById('addVideo').value.trim(),
+    views: 0,
+    createdAt: Date.now()
   };
 
-  const rankVal = document.getElementById('mRank').value;
-  if (rankVal) anime.rank = Number(rankVal);
+  try {
+    await db.ref('animeverse/anime').push(animeData);
+    showToast('✅ Anime add ho gaya!');
+    clearAddForm();
+    loadAnimeList();
+    loadStats();
+  } catch (err) {
+    showToast('❌ Error: ' + err.message, true);
+  }
+});
+
+function clearAddForm() {
+  ['addTitle','addPoster','addDesc','addGenre','addVideo'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('addEpisodes').value = '12';
+  document.getElementById('addRating').value = '8.0';
+}
+
+/* ============================================ */
+/* ANILIST SEARCH */
+/* ============================================ */
+document.getElementById('searchAnilistBtn').addEventListener('click', searchAniList);
+document.getElementById('anilistQuery').addEventListener('keypress', e => {
+  if (e.key === 'Enter') searchAniList();
+});
+
+async function searchAniList() {
+  const query = document.getElementById('anilistQuery').value.trim();
+  if (!query) return;
+
+  const resultsBox = document.getElementById('anilistResults');
+  resultsBox.innerHTML = '<p style="color:#888;">Searching...</p>';
+
+  const gql = `
+    query ($search: String) {
+      Page(perPage: 10) {
+        media(search: $search, type: ANIME) {
+          id
+          title { romaji english }
+          coverImage { large }
+          description
+          genres
+          episodes
+          status
+          averageScore
+        }
+      }
+    }
+  `;
 
   try {
-    await animeRef.child('anime_' + id).set(anime);
-    await logActivity(existing ? 'edit' : 'add', title);
-    toast(existing ? '✅ Updated!' : '✅ Added!');
-    clearManual();
-  } catch (e) {
-    toast('Error: ' + e.message, true);
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query: gql, variables: { search: query } })
+    });
+    const data = await res.json();
+    const media = data.data.Page.media;
+
+    if (!media.length) {
+      resultsBox.innerHTML = '<p style="color:#888;">Kuch nahi mila</p>';
+      return;
+    }
+
+    resultsBox.innerHTML = media.map(m => `
+      <div class="search-result" onclick='importFromAniList(${JSON.stringify(JSON.stringify(m)).slice(1, -1)})'>
+        <img src="${m.coverImage.large}" alt="">
+        <div class="search-result-info">
+          <h4>${m.title.english || m.title.romaji}</h4>
+          <p>${(m.genres || []).join(', ')}</p>
+          <p>Episodes: ${m.episodes || '?'} | Score: ${m.averageScore || '?'}</p>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    resultsBox.innerHTML = '<p style="color:#ff5555;">Error: ' + err.message + '</p>';
   }
 }
 
-/* ============================================================
-   🗑️ DELETE
-   ============================================================ */
-async function deleteAnime(id) {
-  const a = getAnime(id);
-  if (!a) return;
-  if (!confirm(`"${a.title}" DELETE karein? Ye undo nahi hoga!`)) return;
+async function importFromAniList(jsonStr) {
+  const m = JSON.parse(jsonStr);
+
+  const animeData = {
+    title: m.title.english || m.title.romaji,
+    poster: m.coverImage.large,
+    description: (m.description || '').replace(/<[^>]*>/g, '').slice(0, 500),
+    genre: (m.genres || []).join(', '),
+    status: m.status === 'FINISHED' ? 'Completed' : (m.status === 'RELEASING' ? 'Ongoing' : 'Upcoming'),
+    episodes: m.episodes || 12,
+    rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : 8.0,
+    videoUrl: '',
+    views: 0,
+    createdAt: Date.now()
+  };
+
   try {
-    await animeRef.child('anime_' + id).remove();
-    await logActivity('delete', a.title);
-    toast('🗑️ Deleted');
-  } catch (e) {
-    toast('Error: ' + e.message, true);
+    await db.ref('animeverse/anime').push(animeData);
+    showToast('✅ ' + animeData.title + ' import ho gaya!');
+    loadAnimeList();
+    loadStats();
+  } catch (err) {
+    showToast('❌ Error: ' + err.message, true);
   }
 }
 
-/* ============================================================
-   🎬 EPISODES
-   ============================================================ */
-function openEpisodes(animeId) {
-  currentEpAnimeId = animeId;
-  const a = getAnime(animeId);
-  if (!a) return;
-  document.getElementById('epModalTitle').textContent = a.title;
+/* ============================================ */
+/* LOAD ANIME LIST */
+/* ============================================ */
+let allAnimeCache = {};
 
-  const sel = document.getElementById('seasonSelect');
-  sel.innerHTML = (a.seasons || []).map(s =>
-    `<option value="${s.number}">Season ${s.number}</option>`).join('');
-
-  renderEpisodes();
-  document.getElementById('epModal').classList.add('on');
+function loadAnimeList() {
+  db.ref('animeverse/anime').on('value', snap => {
+    allAnimeCache = snap.val() || {};
+    renderAnimeList();
+  });
 }
 
-function renderEpisodes() {
-  const a = getAnime(currentEpAnimeId);
-  if (!a) return;
-  const seasonNum = Number(document.getElementById('seasonSelect').value) || 1;
-  const season = a.seasons?.find(s => s.number === seasonNum);
-  const eps = season?.episodes || [];
+function renderAnimeList(filter = '') {
+  const box = document.getElementById('animeList');
+  const entries = Object.entries(allAnimeCache);
 
-  const box = document.getElementById('epList');
-  if (!eps.length) {
-    box.innerHTML = '<div class="empty">Koi episode nahi. "+ Naya Episode" dabao.</div>';
+  const filtered = filter
+    ? entries.filter(([id, a]) => (a.title || '').toLowerCase().includes(filter.toLowerCase()))
+    : entries;
+
+  if (!filtered.length) {
+    box.innerHTML = '<div class="empty">Koi anime nahi mila</div>';
     return;
   }
 
-  box.innerHTML = eps.map(ep => `
-    <div class="ep-item">
-      <img src="${imgUrl(ep.thumb, 120, 90)}" alt="">
-      <div class="ep-meta">
-        <h4>EP ${ep.num} — ${escapeHtml(ep.title)}</h4>
-        <small>${ep.duration} · ${ep.videoUrl ? '✓ Video' : '⚠ No video'}</small>
+  box.innerHTML = filtered.map(([id, a]) => `
+    <div class="anime-item">
+      <img src="${a.poster || ''}" alt="">
+      <div class="anime-info">
+        <h4>${a.title || 'Untitled'}</h4>
+        <p>${a.genre || 'No genre'} | ${a.status || ''} | ${a.episodes || 0} eps | ⭐ ${a.rating || 0}</p>
       </div>
-      <div class="ep-actions">
-        <button onclick="editEpisode(${ep.num})" title="Edit">✏️</button>
-        <button class="del" onclick="deleteEpisode(${ep.num})" title="Delete">🗑️</button>
+      <div class="anime-actions">
+        <button class="btn-red" onclick="deleteAnime('${id}', '${(a.title || '').replace(/'/g, "\\'")}')">🗑️ Delete</button>
       </div>
     </div>
   `).join('');
 }
 
-function openEpForm(editNum = null) {
-  editingEpNum = editNum;
-  document.getElementById('epFormTitle').textContent =
-    editNum ? `✏️ Edit Episode ${editNum}` : '➕ Add Episode';
+document.getElementById('librarySearch').addEventListener('input', e => {
+  renderAnimeList(e.target.value);
+});
 
-  if (editNum) {
-    const a = getAnime(currentEpAnimeId);
-    const seasonNum = Number(document.getElementById('seasonSelect').value) || 1;
-    const ep = a.seasons.find(s => s.number === seasonNum)
-      ?.episodes.find(e => e.num === editNum);
-    if (ep) {
-      document.getElementById('fEpNum').value = ep.num;
-      document.getElementById('fEpTitle').value = ep.title;
-      document.getElementById('fEpThumb').value = ep.thumb || '';
-      document.getElementById('fEpDur').value = ep.duration || '';
-      document.getElementById('fEpVideo').value = ep.videoUrl || '';
-      document.getElementById('fEpVideo720').value = ep.videoUrl720 || '';
-      document.getElementById('fEpVideo480').value = ep.videoUrl480 || '';
-    }
-  } else {
-    ['fEpNum','fEpTitle','fEpThumb','fEpDur','fEpVideo','fEpVideo720','fEpVideo480']
-      .forEach(k => document.getElementById(k).value = '');
-  }
-  document.getElementById('epFormModal').classList.add('on');
-}
-
-function editEpisode(num) { openEpForm(num); }
-
-async function saveEpisode() {
-  const a = getAnime(currentEpAnimeId);
-  if (!a) return;
-  const seasonNum = Number(document.getElementById('seasonSelect').value) || 1;
-  const num = Number(document.getElementById('fEpNum').value);
-  const title = document.getElementById('fEpTitle').value.trim();
-  const video = document.getElementById('fEpVideo').value.trim();
-
-  if (!num || !title || !video) {
-    return toast('Ep#, Title, Video URL zaroori hai', true);
-  }
-
-  a.seasons = a.seasons || [];
-  let season = a.seasons.find(s => s.number === seasonNum);
-  if (!season) {
-    season = { number: seasonNum, episodes: [] };
-    a.seasons.push(season);
-  }
-
-  if (!editingEpNum && season.episodes.find(e => e.num === num)) {
-    if (!confirm(`Episode ${num} already exists. Overwrite?`)) return;
-    season.episodes = season.episodes.filter(e => e.num !== num);
-  }
-  if (editingEpNum) {
-    season.episodes = season.episodes.filter(e => e.num !== editingEpNum);
-  }
-
-  const ep = {
-    num, title,
-    thumb: document.getElementById('fEpThumb').value.trim() ||
-           ('ep' + a.id + '_' + num),
-    duration: document.getElementById('fEpDur').value.trim() || '24:00',
-    videoUrl: video,
-    servers: [{ name: 'Server 1', quality: '1080p', url: '#' }]
-  };
-  const v720 = document.getElementById('fEpVideo720').value.trim();
-  const v480 = document.getElementById('fEpVideo480').value.trim();
-  if (v720) ep.videoUrl720 = v720;
-  if (v480) ep.videoUrl480 = v480;
-
-  season.episodes.push(ep);
-  season.episodes.sort((x, y) => x.num - y.num);
-
+async function deleteAnime(id, title) {
+  if (!confirm('Delete "' + title + '" ?')) return;
   try {
-    await animeRef.child('anime_' + a.id).set(a);
-    await logActivity(editingEpNum ? 'edit_ep' : 'add_ep',
-      `${a.title} S${seasonNum}E${num}`);
-    toast('✅ Episode saved!');
-    closeModal('epFormModal');
-    renderEpisodes();
-  } catch (e) {
-    toast('Error: ' + e.message, true);
+    await db.ref('animeverse/anime/' + id).remove();
+    showToast('🗑️ Delete ho gaya');
+    loadStats();
+  } catch (err) {
+    showToast('❌ ' + err.message, true);
   }
 }
 
-async function deleteEpisode(num) {
-  if (!confirm(`Episode ${num} delete karein?`)) return;
-  const a = getAnime(currentEpAnimeId);
-  const seasonNum = Number(document.getElementById('seasonSelect').value) || 1;
-  const season = a.seasons.find(s => s.number === seasonNum);
-  season.episodes = season.episodes.filter(e => e.num !== num);
+/* ============================================ */
+/* ANALYTICS */
+/* ============================================ */
+function loadStats() {
+  db.ref('animeverse/anime').on('value', snap => {
+    const data = snap.val() || {};
+    const arr = Object.values(data);
 
-  try {
-    await animeRef.child('anime_' + a.id).set(a);
-    await logActivity('delete_ep', `${a.title} S${seasonNum}E${num}`);
-    toast('🗑️ Episode deleted');
-    renderEpisodes();
-  } catch (e) {
-    toast('Error: ' + e.message, true);
-  }
-}
+    document.getElementById('statTotalAnime').textContent = arr.length;
+    document.getElementById('statOngoing').textContent = arr.filter(a => a.status === 'Ongoing').length;
+    document.getElementById('statCompleted').textContent = arr.filter(a => a.status === 'Completed').length;
 
-/* ============================================================
-   📊 ANALYTICS
-   ============================================================ */
-function renderAnalytics() {
-  statsRef.once('value').then(snap => {
-    const d = snap.val() || {};
+    const totalViews = arr.reduce((s, a) => s + (a.views || 0), 0);
+    document.getElementById('statTotalViews').textContent = totalViews;
 
-    const perAnime = d.perAnime || {};
-    const arr = Object.keys(perAnime).map(k => ({
-      id: Number(k.replace('anime_', '')),
-      count: perAnime[k]
-    })).sort((a, b) => b.count - a.count).slice(0, 10);
-
-    const max = arr[0]?.count || 1;
-    const topList = document.getElementById('topList');
-    if (!arr.length) {
-      topList.innerHTML = '<div class="empty">Abhi koi data nahi.</div>';
-    } else {
-      topList.innerHTML = arr.map((item, i) => {
-        const a = getAnime(item.id);
-        const pct = (item.count / max) * 100;
-        return `
-          <div class="top-row">
-            <div class="rank">${i + 1}</div>
-            <div class="bar-wrap">
-              <div class="bar" style="width:${pct}%"></div>
-              <div class="bar-label">${a ? escapeHtml(a.title) : 'Anime #' + item.id}</div>
+    const top10 = arr.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+    document.getElementById('topViewedList').innerHTML = top10.length
+      ? top10.map(a => `
+          <div class="anime-item">
+            <img src="${a.poster || ''}" alt="">
+            <div class="anime-info">
+              <h4>${a.title}</h4>
+              <p>👁️ ${a.views || 0} views</p>
             </div>
-            <div class="count">${item.count}</div>
           </div>
-        `;
-      }).join('');
-    }
-
-    const acts = d.recentActivity || {};
-    const actArr = Object.values(acts)
-      .sort((a, b) => b.timestamp - a.timestamp).slice(0, 15);
-    const actList = document.getElementById('activityList');
-    if (!actArr.length) {
-      actList.innerHTML = '<div class="empty">Koi activity nahi.</div>';
-    } else {
-      actList.innerHTML = actArr.map(act => {
-        const icons = { view:'👁', add:'➕', edit:'✏️', delete:'🗑️',
-          add_ep:'🎬', edit_ep:'✏️', delete_ep:'🗑️' };
-        const time = timeAgo(act.timestamp);
-        let text = act.title || '';
-        if (act.type === 'view') {
-          const a = getAnime(act.animeId);
-          text = `${a?.title || 'Anime'} — Ep ${act.episode}`;
-        }
-        return `<div class="act-item">
-          <span class="icon">${icons[act.type] || '•'}</span>
-          <span>${escapeHtml(text)}</span>
-          <span class="time">${time}</span>
-        </div>`;
-      }).join('');
-    }
-
-    const daily = d.dailyViews || {};
-    const days = Object.keys(daily).sort().slice(-7);
-    const chart = document.getElementById('dailyChart');
-    if (!days.length) {
-      chart.innerHTML = '<div class="empty">Koi daily data nahi.</div>';
-    } else {
-      const maxD = Math.max(...days.map(k => daily[k]));
-      chart.innerHTML = days.map(day => {
-        const pct = (daily[day] / maxD) * 100;
-        return `
-          <div style="display:grid;grid-template-columns:90px 1fr 50px;
-               gap:10px;align-items:center;margin-bottom:8px;">
-            <span style="font-size:11.5px;color:var(--muted);
-                  font-weight:600;">${day}</span>
-            <div style="background:#0b0b0f;border-radius:4px;height:22px;
-                 overflow:hidden;">
-              <div style="height:100%;width:${pct}%;background:
-                   linear-gradient(90deg,#2196f3,#64b5f6);"></div>
-            </div>
-            <span style="font-size:12px;font-weight:700;text-align:right;">
-              ${daily[day]}</span>
-          </div>
-        `;
-      }).join('');
-    }
-  }).catch(() => {});
-}
-
-/* ============================================================
-   🛠 UTILS
-   ============================================================ */
-function logActivity(type, title) {
-  const key = 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  return statsRef.child('recentActivity/' + key).set({
-    type, title, timestamp: Date.now()
+        `).join('')
+      : '<div class="empty">Abhi koi data nahi</div>';
   });
 }
-
-function timeAgo(ts) {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return s + 's ago';
-  if (s < 3600) return Math.floor(s/60) + 'm ago';
-  if (s < 86400) return Math.floor(s/3600) + 'h ago';
-  return Math.floor(s/86400) + 'd ago';
-}
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('on');
-}
-
-let toastT;
-function toast(msg, err = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.toggle('err', err);
-  t.classList.add('on');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('on'), 2800);
-}
 </script>
+
 </body>
 </html>
